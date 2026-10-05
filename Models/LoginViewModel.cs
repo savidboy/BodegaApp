@@ -4,13 +4,16 @@ namespace BodegaApp.Models;
 
 public class LoginViewModel
 {
-    [Required]
-    [EmailAddress]
+    [Required(ErrorMessage = "El correo electrónico es requerido.")]
+    [EmailAddress(ErrorMessage = "El formato del correo no es válido.")]
+    [Display(Name = "Correo Electrónico")]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "La contraseña es requerida.")]
     [DataType(DataType.Password)]
+    [Display(Name = "Contraseña")]
     public string Password { get; set; } = string.Empty;
 
+    [Display(Name = "Recordarme")]
     public bool RememberMe { get; set; }
 }
