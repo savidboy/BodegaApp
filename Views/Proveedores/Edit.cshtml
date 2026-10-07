@@ -45,13 +45,13 @@
 
                         <div class="mb-3">
                             <label asp-for="Telefono" class="form-label">Teléfono</label>
-                            <input asp-for="Telefono" class="form-control" type="tel" placeholder="Ej. 300 123 4567" />
+                            <input asp-for="Telefono" class="form-control" type="tel" inputmode="tel" placeholder="Ej. 300 123 4567" />
                             <span asp-validation-for="Telefono" class="text-danger"></span>
                         </div>
 
                         <div class="mb-3">
                             <label asp-for="Email" class="form-label">Email</label>
-                            <input asp-for="Email" class="form-control" placeholder="correo@ejemplo.com" />
+                            <input asp-for="Email" class="form-control" type="email" placeholder="correo@ejemplo.com" />
                             <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
 

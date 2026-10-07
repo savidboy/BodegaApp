@@ -1,13 +1,13 @@
 @model BodegaApp.Domain.Entities.Proveedor
 
 @{
-    ViewData["Title"] = "Eliminar Proveedor";
+    ViewData["Title"] = "Desactivar Proveedor";
 }
 
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <h1 class="text-danger">Eliminar Proveedon</h1>
+            <h1 class="text-danger">Desactivar Proveedor</h1>
 
             @if (TempData["Error"] is string mensajeError)
             {
@@ -15,7 +15,7 @@
             }
 
             <div class="alert alert-warning mt-3">
-                ¿Está seguro de que desea eliminar este proveedor? Esta acción no se puede deshacer.
+                ¿Está seguro de que desea desactivar este proveedor? No se eliminará, solo quedará inactivo.
             </div>
 
             <div class="card mt-3 border-danger">
@@ -43,7 +43,14 @@
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
                         <input type="hidden" asp-for="Id" />
                         <div class="d-flex flex-wrap gap-2">
-                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                            @if (Model.Activo)
+                            {
+                                <button type="submit" class="btn btn-danger">Desactivar</button>
+                            }
+                            else
+                            {
+                                <span class="text-muted align-self-center">Este proveedor ya está inactivo.</span>
+                            }
                             <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
@@ -52,4 +59,3 @@
         </div>
     </div>
 </div>
-
