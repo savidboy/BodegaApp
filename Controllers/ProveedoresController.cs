@@ -14,15 +14,31 @@ namespace BodegaApp.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // 1. CREAR PROVEEDOR (GET y POST)
-        // ==========================================
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            var proveedores = await _context.Proveedores.AsNoTracking().ToListAsync();
+            return View(proveedores);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var proveedor = await _context.Proveedores.FirstOrDefaultAsync(m => m.Id == id);
+            if (proveedor == null) return NotFound();
+
+            return View(proveedor);
+        }
+
         [HttpGet]
         public IActionResult Create()
         {
             return View();
         }
 
+        // POST: Proveedores/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Proveedor proveedor)
@@ -30,19 +46,17 @@ namespace BodegaApp.Controllers
             if (ModelState.IsValid)
             {
                 _context.Add(proveedor);
-                await _context.SaveChangesAsync(); // Guarda los cambios del nuevo proveedor en la base de datos
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(proveedor);
         }
 
-        // ==========================================
-        // 2. EDITAR PROVEEDOR (GET y POST)
-        // ==========================================
+        // GET: Proveedores/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null) return NotFound(); // Muestra error si el ID no existe
+            if (id == null) return NotFound();
 
             var proveedor = await _context.Proveedores.FindAsync(id);
             if (proveedor == null) return NotFound();
@@ -50,6 +64,7 @@ namespace BodegaApp.Controllers
             return View(proveedor);
         }
 
+        // POST: Proveedores/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Proveedor proveedor)
@@ -61,7 +76,7 @@ namespace BodegaApp.Controllers
                 try
                 {
                     _context.Update(proveedor);
-                    await _context.SaveChangesAsync(); // Actualiza la información del proveedor en la base de datos[cite: 1]
+                    await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -73,21 +88,21 @@ namespace BodegaApp.Controllers
             return View(proveedor);
         }
 
-        // ==========================================
-        // 3. ELIMINAR PROVEEDOR (GET y POST)
-        // ==========================================
+        // GET: Proveedores/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
 
             var proveedor = await _context.Proveedores
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (proveedor == null) return NotFound();
 
             return View(proveedor);
         }
 
+        // POST: Proveedores/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -96,7 +111,7 @@ namespace BodegaApp.Controllers
             if (proveedor != null)
             {
                 _context.Proveedores.Remove(proveedor);
-                await _context.SaveChangesAsync(); // Elimina el registro del proveedor de la base de datos[cite: 1]
+                await _context.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Index));
