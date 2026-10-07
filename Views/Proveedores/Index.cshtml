@@ -1,0 +1,69 @@
+@model IEnumerable<BodegaApp.Domain.Entities.Proveedor>
+
+@{
+    ViewData["Title"] = "Proveedores";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Proveedores</h1>
+
+        <a asp-controller="Proveedores" asp-action="Create" class="btn btn-primary">
+            Nuevo Proveedor
+        </a>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Tipo</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var proveedor in Model)
+            {
+                <tr>
+                    <td>@proveedor.Nombre</td>
+                    <td>@proveedor.Contacto</td>
+                    <td>
+                        <span class="badge bg-info">
+                            @proveedor.Tipo
+                        </span>
+                    </td>
+                    <td>@proveedor.Telefono</td>
+                    <td>@proveedor.Email</td>
+                    <td>
+                        @if (proveedor.Activo)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactivo</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@proveedor.Id" class="btn btn-sm btn-info">
+                            Ver
+                        </a>
+
+                        <a asp-action="Edit" asp-route-id="@proveedor.Id" class="btn btn-sm btn-warning">
+                            Editar
+                        </a>
+
+                        <a asp-action="Delete" asp-route-id="@proveedor.Id" class="btn btn-sm btn-danger">
+                            Eliminar
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
