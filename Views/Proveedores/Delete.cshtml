@@ -5,24 +5,50 @@
 }
 
 <div class="container mt-4">
-    <h1 class="text-danger">Eliminar Proveedor</h1>
-    <h3 class="lead">¿Está seguro de que desea eliminar este proveedor?</h3>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="text-danger">Eliminar Proveedon</h1>
 
-    <div class="card mt-3 border-danger">
-        <div class="card-body">
-            <h4 class="card-title text-danger">@Model.Nombre</h4>
+            @if (TempData["Error"] is string mensajeError)
+            {
+                <div class="alert alert-danger mt-3">@mensajeError</div>
+            }
 
-            <p><strong>Contacto:</strong> @Model.Contacto</p>
-            <p><strong>Tipo:</strong> @Model.Tipo</p>
-            <p><strong>Teléfono:</strong> @Model.Telefono</p>
-            <p><strong>Email:</strong> @Model.Email</p>
-            <p><strong>Dirección:</strong> @Model.Direccion</p>
+            <div class="alert alert-warning mt-3">
+                ¿Está seguro de que desea eliminar este proveedor? Esta acción no se puede deshacer.
+            </div>
 
-            <form asp-action="Delete" method="post" class="mt-4">
-                <input type="hidden" asp-for="Id" />
-                <button type="submit" class="btn btn-danger">Eliminar</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-            </form>
+            <div class="card mt-3 border-danger">
+                <div class="card-body">
+                    <h4 class="card-title text-danger">@Model.Nombre</h4>
+
+                    <p><strong>Contacto:</strong> @Model.Contacto</p>
+                    <p><strong>Tipo:</strong> @Model.Tipo</p>
+                    <p><strong>Teléfono:</strong> @Model.Telefono</p>
+                    <p><strong>Email:</strong> @Model.Email</p>
+                    <p><strong>Dirección:</strong> @Model.Direccion</p>
+
+                    <p>
+                        <strong>Estado:</strong>
+                        @if (Model.Activo)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactivo</span>
+                        }
+                    </p>
+
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
