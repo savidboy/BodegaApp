@@ -2,15 +2,24 @@
 
 @{
     ViewData["Title"] = "Proveedores";
+    var incluirInactivos = (bool)(ViewData["IncluirInactivos"] ?? false);
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Proveedores</h1>
 
-        <a asp-controller="Proveedores" asp-action="Create" class="btn btn-primary">
-            Nuevo Proveedor
-        </a>
+        <div class="d-flex gap-2 align-items-center">
+            <a asp-action="Index"
+               asp-route-incluirInactivos="@(!incluirInactivos)"
+               class="btn btn-outline-secondary btn-sm">
+                @(incluirInactivos ? "Ocultar inactivos" : "Ver inactivos")
+            </a>
+
+            <a asp-controller="Proveedores" asp-action="Create" class="btn btn-primary">
+                Nuevo Proveedor
+            </a>
+        </div>
     </div>
 
     <table class="table table-hover">
@@ -29,7 +38,7 @@
         <tbody>
             @foreach (var proveedor in Model)
             {
-                <tr>
+                <tr class="@(proveedor.Activo ? "" : "table-secondary opacity-75")">
                     <td>@proveedor.Nombre</td>
                     <td>@proveedor.Contacto</td>
                     <td>
@@ -58,9 +67,21 @@
                             Editar
                         </a>
 
-                        <a asp-action="Delete" asp-route-id="@proveedor.Id" class="btn btn-sm btn-danger">
-                            Eliminar
-                        </a>
+                        @if (proveedor.Activo)
+                        {
+                            <a asp-action="Delete" asp-route-id="@proveedor.Id" class="btn btn-sm btn-danger">
+                                Desactivar
+                            </a>
+                        }
+                    </td>
+                </tr>
+            }
+
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No hay proveedores para mostrar.
                     </td>
                 </tr>
             }

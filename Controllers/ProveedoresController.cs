@@ -15,9 +15,16 @@ namespace BodegaApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(bool incluirInactivos = false)
         {
-            var proveedores = await _context.Proveedores.AsNoTracking().ToListAsync();
+            var query = _context.Proveedores.AsNoTracking().AsQueryable();
+
+            if (!incluirInactivos)
+                query = query.Where(p => p.Activo);
+
+            ViewData["IncluirInactivos"] = incluirInactivos;
+
+            var proveedores = await query.ToListAsync();
             return View(proveedores);
         }
 
@@ -110,7 +117,7 @@ namespace BodegaApp.Controllers
             var proveedor = await _context.Proveedores.FindAsync(id);
             if (proveedor != null)
             {
-                _context.Proveedores.Remove(proveedor);
+                proveedor.Activo = false;
                 await _context.SaveChangesAsync();
             }
 
