@@ -2,40 +2,31 @@
     ViewData["Title"] = "Panel Principal";
 }
 
-<div class="py-4">
-    <div class="p-5 mb-4 bg-light rounded-3 shadow-sm border">
-        <div class="container-fluid py-2">
-            <h1 class="display-5 fw-bold text-primary">Sistema de Bodega</h1>
-            <p class="col-md-8 fs-5 text-muted">
-                Bienvenido al sistema de administración y control de inventario. Desde aquí podrás gestionar productos, pedidos y usuarios.
-            </p>
+<div class="hero p-4 p-md-5 mb-4">
+    <h1 class="h3 mb-2">Sistema de Bodega</h1>
+    <p class="text-muted mb-0" style="max-width: 65ch;">
+        Bienvenido al sistema de administración y control de inventario. Desde aquí podrás gestionar
+        productos, pedidos y usuarios.
+    </p>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="module-card p-4">
+            <h5>Inventario</h5>
+            <p class="text-muted">Consulta de existencias, alta de nuevos productos y control de stock.</p>
         </div>
     </div>
-
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold text-dark">📦 Inventario</h5>
-                    <p class="card-text text-muted">Consulta de existencias, alta de nuevos productos y control de stock.</p>
-                </div>
-            </div>
+    <div class="col-md-4">
+        <div class="module-card p-4">
+            <h5>Pedidos</h5>
+            <p class="text-muted">Registro y seguimiento de salidas, compras y recepción de mercadería.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold text-dark">📋 Pedidos</h5>
-                    <p class="card-text text-muted">Registro y seguimiento de salidas, compras y recepción de mercadería.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold text-dark">👥 Usuarios</h5>
-                    <p class="card-text text-muted">Administración de accesos, roles y cuentas del personal autorizado.</p>
-                </div>
-            </div>
+    </div>
+    <div class="col-md-4">
+        <div class="module-card p-4">
+            <h5>Usuarios</h5>
+            <p class="text-muted">Administración de accesos, roles y cuentas del personal autorizado.</p>
         </div>
     </div>
 </div>

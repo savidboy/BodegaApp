@@ -6,9 +6,9 @@ using BodegaApp.Domain.Entities;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<BodegaDbContext>(opt =>
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<Usuario, IdentityRole>(opt =>
+builder.Services.AddIdentity<User, IdentityRole>(opt =>
 {
     opt.Password.RequireDigit = false;
     opt.Password.RequiredLength = 6;
@@ -26,7 +26,7 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Inicialización y seed de datos iniciales
+// Migraciones y seed de datos iniciales
 await DbInitializer.SeedAsync(app.Services);
 
 app.UseStaticFiles();

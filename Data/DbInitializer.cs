@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using BodegaApp.Domain.Entities;
 
 namespace BodegaApp.Data;
@@ -9,10 +10,10 @@ public static class DbInitializer
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BodegaDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Usuario>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
-        // Aseguramos que la base de datos esté creada
-        await context.Database.EnsureCreatedAsync();
+        // Aplicamos las migraciones pendientes para dejar el esquema al día en PostgreSQL
+        await context.Database.MigrateAsync();
 
         // Creamos un usuario administrador de prueba si no existe
         var adminEmail = "admin@bodega.com";
@@ -20,11 +21,11 @@ public static class DbInitializer
 
         if (adminUser == null)
         {
-            adminUser = new Usuario
+            adminUser = new User
             {
                 UserName = adminEmail,
                 Email = adminEmail,
-                NombreCompleto = "Administrador",
+                FullName = "Administrador",
                 EmailConfirmed = true
             };
 

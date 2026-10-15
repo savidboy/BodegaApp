@@ -1,0 +1,91 @@
+@model BodegaApp.Domain.Entities.Supplier
+
+@{
+    ViewData["Title"] = "Editar Proveedor";
+    var currentType = Model.Type;
+    var isCustomType = !SupplierTypes.IsPredefined(currentType) && !string.IsNullOrWhiteSpace(currentType);
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="page-title">Editar Proveedor</h1>
+            <p class="text-muted">
+                Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+            </p>
+
+            <div class="card mt-3">
+                <div class="card-body p-4">
+                    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" autofocus />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Contact" class="form-label">Contacto</label>
+                            <input asp-for="Contact" class="form-control" placeholder="Persona de contacto" />
+                            <span asp-validation-for="Contact" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Type" class="form-label">Tipo</label>
+                            <select id="supplierType" name="Type" class="form-select">
+                                <option value="">Seleccione un tipo…</option>
+                                @foreach (var tipo in SupplierTypes.All)
+                                {
+                                    <option value="@tipo" selected="@(currentType == tipo)">@tipo</option>
+                                }
+                                <option value="@SupplierTypes.Other" selected="@isCustomType">Otro (escribir uno nuevo)</option>
+                            </select>
+                            <input id="supplierTypeCustom"
+                                   class="form-control mt-2 @(isCustomType ? "" : "d-none")"
+                                   value="@(isCustomType ? currentType : "")"
+                                   placeholder="Escriba el tipo de proveedor" />
+                            <div class="form-text">
+                                Elige un tipo de la lista o selecciona <em>Otro</em> para escribirlo.
+                            </div>
+                            <span asp-validation-for="Type" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Phone" class="form-label">Teléfono</label>
+                            <input asp-for="Phone" class="form-control" type="tel" inputmode="tel" placeholder="Ej. 300 123 4567" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="correo@ejemplo.com" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">Dirección</label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                            <label asp-for="IsActive" class="form-check-label">Activo</label>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Actualizar</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,54 @@
+@model BodegaApp.Domain.Entities.Supplier
+
+@{
+    ViewData["Title"] = "Eliminar Proveedor";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="page-title text-danger">Eliminar Proveedor Permanentemente</h1>
+
+            @if (TempData["Error"] is string errorMessage)
+            {
+                <div class="alert alert-danger mt-3">@errorMessage</div>
+            }
+
+            <div class="alert alert-danger mt-3">
+                <strong>¡Atención!</strong> Esta acción eliminará el proveedor de forma permanente y no se puede deshacer.
+            </div>
+
+            <div class="card mt-3 border-danger">
+                <div class="card-body">
+                    <h4 class="card-title text-danger">@Model.Name</h4>
+
+                    <p><strong>Contacto:</strong> @Model.Contact</p>
+                    <p><strong>Tipo:</strong> @Model.Type</p>
+                    <p><strong>Teléfono:</strong> @Model.Phone</p>
+                    <p><strong>Email:</strong> @Model.Email</p>
+                    <p><strong>Dirección:</strong> @Model.Address</p>
+
+                    <p>
+                        <strong>Estado:</strong>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactivo</span>
+                        }
+                    </p>
+
+                    <form asp-action="HardDelete" asp-route-id="@Model.Id" method="post" class="mt-4">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-danger">Eliminar permanentemente</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
