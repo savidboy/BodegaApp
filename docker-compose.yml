@@ -1,0 +1,42 @@
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: bodega-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bodega_db}
+      POSTGRES_USER: ${POSTGRES_USER:-savid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es requerido}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-savid} -d ${POSTGRES_DB:-bodega_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bodega-web
+    restart: always
+    ports:
+      - "127.0.0.1:5080:8080"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres_db;Port=5432;Database=${POSTGRES_DB:-bodega_db};Username=${POSTGRES_USER:-savid};Password=${POSTGRES_PASSWORD}
+      - AllowedHosts=${ALLOWED_HOSTS:-localhost;127.0.0.1}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  postgres_data:

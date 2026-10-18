@@ -6,6 +6,10 @@
 # dotenv files
 .env
 
+# Configuracion local con credenciales de desarrollo
+**/appsettings.Development.json
+**/appsettings.Local.json
+
 # User-specific files
 *.rsuser
 *.suo
@@ -481,6 +485,7 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# SQLite temporary files
+# Local database files
+*.db
 *.db-shm
 *.db-wal

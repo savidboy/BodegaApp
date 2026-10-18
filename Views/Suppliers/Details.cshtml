@@ -1,0 +1,53 @@
+@model BodegaApp.Domain.Entities.Supplier
+
+@{
+    ViewData["Title"] = "Detalle del proveedor";
+}
+
+<div class="container mt-4">
+    <h1 class="page-title">Detalle del proveedor</h1>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h4 class="card-title">@Model.Name</h4>
+
+            <p><strong>Contacto:</strong> @Model.Contact</p>
+            <p><strong>Tipo:</strong> @Model.Type</p>
+            <p><strong>Teléfono:</strong> @Model.Phone</p>
+            <p><strong>Email:</strong> @Model.Email</p>
+            <p><strong>Dirección:</strong> @Model.Address</p>
+
+            <p>
+                <strong>Estado:</strong>
+
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Activo</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Inactivo</span>
+                }
+            </p>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                Editar
+            </a>
+
+            @if (Model.IsActive)
+            {
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                    Desactivar
+                </a>
+            }
+
+            <a asp-action="HardDelete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                Eliminar permanentemente
+            </a>
+
+            <a asp-action="Index" class="btn btn-secondary">
+                Volver
+            </a>
+        </div>
+    </div>
+</div>

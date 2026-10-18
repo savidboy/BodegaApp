@@ -7,9 +7,9 @@ namespace BodegaApp.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly SignInManager<Usuario> _signInManager;
+    private readonly SignInManager<User> _signInManager;
 
-    public AccountController(SignInManager<Usuario> signInManager)
+    public AccountController(SignInManager<User> signInManager)
     {
         _signInManager = signInManager;
     }

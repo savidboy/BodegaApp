@@ -4,8 +4,8 @@ using BodegaApp.Domain.Entities;
 
 namespace BodegaApp.Data;
 
-public class BodegaDbContext : IdentityDbContext<Usuario>
+public class BodegaDbContext : IdentityDbContext<User>
 {
     public BodegaDbContext(DbContextOptions<BodegaDbContext> options) : base(options) { }
-    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
 }
