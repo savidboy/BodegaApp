@@ -33,6 +33,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=postgres_db;Port=5432;Database=${POSTGRES_DB:-bodega_db};Username=${POSTGRES_USER:-savid};Password=${POSTGRES_PASSWORD}
       - AllowedHosts=${ALLOWED_HOSTS:-localhost;127.0.0.1}
+      - Seed__AdminEmail=${SEED_ADMIN_EMAIL:-admin@bodega.com}
+      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD es requerido}
     security_opt:
       - no-new-privileges:true
     cap_drop:
