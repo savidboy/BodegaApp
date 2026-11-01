@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using BodegaApp.Data.Abstractions;
 
 namespace BodegaApp.Domain.Entities
 {
-    public class Supplier
+    public class Supplier : IId
     {
         [Key]
         public int Id { get; set; }

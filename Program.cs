@@ -3,62 +3,66 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using BodegaApp.Core;
 using BodegaApp.Data;
+using BodegaApp.Data.Seeders;
 using BodegaApp.Domain.Entities;
+using BodegaApp.Services.Abstractions;
+using BodegaApp.Services.Implementations;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<BodegaDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<BodegaDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<User, IdentityRole>(opt =>
+builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
-    opt.Password.RequireDigit = false;
-    opt.Password.RequiredLength = 6;
-    opt.Password.RequireNonAlphanumeric = false;
-    opt.Password.RequireUppercase = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
 })
 .AddEntityFrameworkStores<BodegaDbContext>()
-// Lo necesita el seed para generar el token de reseteo de contraseña
+// El seed genera el token con el que se sincroniza la contraseña del administrador
 .AddDefaultTokenProviders();
 
-// Ngrok termina el TLS y reenvía HTTP, así que sin esto la app no ve X-Forwarded-Proto
+builder.Services.AddAutoMapper(configuration => { }, typeof(AutoMapperProfiles));
+
+builder.Services.AddScoped<ISuppliersService, SuppliersService>();
+
+// El túnel de Cloudflare termina el TLS y reenvía HTTP, así que sin esto la app no ve X-Forwarded-Proto
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
-    // Ngrok usa IPs dinámicas, no hay lista fija de proxies; la app solo escucha en 127.0.0.1
+    // Cloudflare usa IPs dinámicas; la app solo escucha en 127.0.0.1 detrás del túnel
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-builder.Services.ConfigureApplicationCookie(o =>
+builder.Services.ConfigureApplicationCookie(options =>
 {
-    o.LoginPath = "/Account/Login";
-
-    // En desarrollo se permite HTTP; en producción la cookie solo viaja por HTTPS
-    o.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+    options.LoginPath = "/Account/Login";
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
-    o.Cookie.HttpOnly = true;
-    o.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 builder.Services.AddControllersWithViews();
 
-// HSTS por un año
-builder.Services.AddHsts(o =>
+builder.Services.AddHsts(options =>
 {
-    o.MaxAge = TimeSpan.FromDays(365);
-    o.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
 });
 
-// Limite de intentos de login: 10 cada 15 minutos por IP
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // En memoria: si algún día hay varias instancias, cada una contaría por su lado
+    // En memoria: con varias instancias cada una llevaría su propia cuenta
     options.AddPolicy("login", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
@@ -70,20 +74,17 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
-// Migraciones y seed de datos iniciales
-await DbInitializer.SeedAsync(app.Services);
+await SeedDb.SeedAsync(app.Services);
 
-// Antes de todo lo que dependa del esquema o del host
 app.UseForwardedHeaders();
 
-// Cabeceras de seguridad en todas las respuestas
+// Sin CSP un XSS puede cargar script desde cualquier dominio
 app.Use(async (context, next) =>
 {
-    var headers = context.Response.Headers;
+    IHeaderDictionary headers = context.Response.Headers;
 
-    // Los iconos de Bootstrap son SVG en data:, por eso img-src los permite
     headers["Content-Security-Policy"] =
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; " +
         "font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
@@ -91,7 +92,6 @@ app.Use(async (context, next) =>
     headers["X-Frame-Options"] = "DENY";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    // Filtro obsoleto: se deja en 0, la proteccion real es el CSP
     headers["X-XSS-Protection"] = "0";
 
     await next();
@@ -99,7 +99,6 @@ app.Use(async (context, next) =>
 
 if (!app.Environment.IsDevelopment())
 {
-    // Sin esto, un error muestra el stack trace al usuario final
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }

@@ -1,6 +1,10 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=127.0.0.1;Port=5433;Database=bodega_db;Username=<USUARIO>;Password=<PASSWORD>"
+    "DefaultConnection": "Host=127.0.0.1;Port=5432;Database=bodega_db;Username=<USUARIO>;Password=<PASSWORD>"
+  },
+  "Seed": {
+    "AdminEmail": "admin@bodega.com",
+    "AdminPassword": "<PASSWORD_ADMIN>"
   },
   "Logging": {
     "LogLevel": {

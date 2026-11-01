@@ -1,21 +1,16 @@
-@model BodegaApp.Domain.Entities.Supplier
+@model SupplierDTO
 
 @{
-    ViewData["Title"] = "Desactivar Proveedor";
+    ViewData["Title"] = "Desactivar proveedor";
 }
 
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <h1 class="page-title text-danger">Desactivar Proveedor</h1>
-
-            @if (TempData["Error"] is string errorMessage)
-            {
-                <div class="alert alert-danger mt-3">@errorMessage</div>
-            }
+            <h1 class="page-title text-danger">Desactivar proveedor</h1>
 
             <div class="alert alert-warning mt-3">
-                ¿Está seguro de que desea desactivar este proveedor? No se eliminará, solo quedará inactivo.
+                ¿Está seguro de que desea desactivar este proveedor? No se elimina, solo queda inactivo.
             </div>
 
             <div class="card mt-3 border-danger">
@@ -25,7 +20,7 @@
                     <p><strong>Contacto:</strong> @Model.Contact</p>
                     <p><strong>Tipo:</strong> @Model.Type</p>
                     <p><strong>Teléfono:</strong> @Model.Phone</p>
-                    <p><strong>Email:</strong> @Model.Email</p>
+                    <p><strong>Correo:</strong> @Model.Email</p>
                     <p><strong>Dirección:</strong> @Model.Address</p>
 
                     <p>
@@ -41,7 +36,6 @@
                     </p>
 
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
-                        <input type="hidden" asp-for="Id" />
                         <div class="d-flex flex-wrap gap-2">
                             @if (Model.IsActive)
                             {
@@ -51,12 +45,14 @@
                             {
                                 <span class="text-muted align-self-center">Este proveedor ya está inactivo.</span>
                             }
+
                             @if (User.IsInRole(Roles.Admin))
                             {
                                 <a asp-action="HardDelete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
                                     Eliminar permanentemente
                                 </a>
                             }
+
                             <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>

@@ -1,7 +1,7 @@
-@model BodegaApp.Models.SupplierFormViewModel
+@model CreateSupplierDTO
 
 @{
-    ViewData["Title"] = "Crear Proveedor";
+    ViewData["Title"] = "Crear proveedor";
     var currentType = Model.Type;
     var isCustomType = !SupplierTypes.IsPredefined(currentType) && !string.IsNullOrWhiteSpace(currentType);
 }
@@ -9,7 +9,7 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <h1 class="page-title">Crear Proveedor</h1>
+            <h1 class="page-title">Crear proveedor</h1>
             <p class="text-muted">
                 Los campos marcados con <span class="text-danger">*</span> son obligatorios.
             </p>
@@ -42,8 +42,8 @@
                                 <option value="@SupplierTypes.Other" selected="@isCustomType">Otro (escribir uno nuevo)</option>
                             </select>
                             <input id="supplierTypeCustom"
-                                   class="form-control mt-2 @(isCustomType ? "" : "d-none")"
-                                   value="@(isCustomType ? currentType : "")"
+                                   class="form-control mt-2 @(isCustomType ? string.Empty : "d-none")"
+                                   value="@(isCustomType ? currentType : string.Empty)"
                                    placeholder="Escriba el tipo de proveedor" />
                             <div class="form-text">
                                 Elige un tipo de la lista o selecciona <em>Otro</em> para escribirlo.
@@ -58,7 +58,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="Email" class="form-label">Email</label>
+                            <label asp-for="Email" class="form-label">Correo</label>
                             <input asp-for="Email" class="form-control" type="email" placeholder="correo@ejemplo.com" />
                             <span asp-validation-for="Email" class="text-danger"></span>
                         </div>

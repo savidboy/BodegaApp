@@ -1,4 +1,4 @@
-@model BodegaApp.Domain.Entities.Supplier
+@model SupplierDTO
 
 @{
     ViewData["Title"] = "Detalle del proveedor";
@@ -14,12 +14,11 @@
             <p><strong>Contacto:</strong> @Model.Contact</p>
             <p><strong>Tipo:</strong> @Model.Type</p>
             <p><strong>Teléfono:</strong> @Model.Phone</p>
-            <p><strong>Email:</strong> @Model.Email</p>
+            <p><strong>Correo:</strong> @Model.Email</p>
             <p><strong>Dirección:</strong> @Model.Address</p>
 
             <p>
                 <strong>Estado:</strong>
-
                 @if (Model.IsActive)
                 {
                     <span class="badge bg-success">Activo</span>
@@ -30,15 +29,11 @@
                 }
             </p>
 
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
-                Editar
-            </a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Editar</a>
 
             @if (Model.IsActive)
             {
-                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
-                    Desactivar
-                </a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Desactivar</a>
             }
 
             @if (User.IsInRole(Roles.Admin))
@@ -48,9 +43,7 @@
                 </a>
             }
 
-            <a asp-action="Index" class="btn btn-secondary">
-                Volver
-            </a>
+            <a asp-action="Index" class="btn btn-secondary">Volver</a>
         </div>
     </div>
 </div>

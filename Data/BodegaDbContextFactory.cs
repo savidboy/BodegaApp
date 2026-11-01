@@ -4,10 +4,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace BodegaApp.Data;
 
-/// <summary>
-/// Factory de design-time que usa la CLI de EF Core ("dotnet ef") para poder generar
-/// migraciones sin levantar el host web (que ejecutaría migraciones y seed al arrancar).
-/// </summary>
+// Lo usa "dotnet ef" para crear migraciones sin arrancar el host: el arranque
+// aplica migraciones y siembra datos, y eso estorba desde la CLI.
 public class BodegaDbContextFactory : IDesignTimeDbContextFactory<BodegaDbContext>
 {
     public BodegaDbContext CreateDbContext(string[] args)
@@ -19,11 +17,10 @@ public class BodegaDbContextFactory : IDesignTimeDbContextFactory<BodegaDbContex
             .AddEnvironmentVariables()
             .Build();
 
-        // Sin cadena de conexión no se puede generar nada; nada de credenciales por defecto aquí
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Falta ConnectionStrings:DefaultConnection. Definila en appsettings.Development.json " +
-                "o en la variable de entorno ConnectionStrings__DefaultConnection antes de usar 'dotnet ef'.");
+                "o en ConnectionStrings__DefaultConnection.");
 
         var options = new DbContextOptionsBuilder<BodegaDbContext>()
             .UseNpgsql(connectionString)

@@ -1,187 +1,95 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BodegaApp.Data;
+using BodegaApp.Core;
+using BodegaApp.Core.Pagination;
 using BodegaApp.Domain;
-using BodegaApp.Domain.Entities;
-using BodegaApp.Models;
+using BodegaApp.DTOs.Supplier;
+using BodegaApp.Services.Abstractions;
 
-namespace BodegaApp.Controllers
+namespace BodegaApp.Controllers;
+
+[Authorize]
+public class SuppliersController : Controller
 {
-    [Authorize]
-    public class SuppliersController : Controller
+    private readonly ISuppliersService _suppliersService;
+
+    public SuppliersController(ISuppliersService suppliersService)
     {
-        private readonly BodegaDbContext _context;
+        _suppliersService = suppliersService;
+    }
 
-        public SuppliersController(BodegaDbContext context)
+    // Un proveedor inactivo es un proveedor "borrado": solo el admin lo sigue viendo
+    private bool IncludeInactive => User.IsInRole(Roles.Admin);
+
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] SupplierPaginationRequest request)
+    {
+        request.IncludeInactive = request.IncludeInactive && IncludeInactive;
+
+        Response<PaginationResponse<SupplierDTO>> response = await _suppliersService.GetPaginationAsync(request);
+
+        if (!response.IsSuccess || response.Result is null)
         {
-            _context = context;
+            TempData["Error"] = response.Message;
+            return View(new PaginationResponse<SupplierDTO>());
         }
 
-        private bool IsAdmin => User.IsInRole(Roles.Admin);
+        return View(response.Result);
+    }
 
-        // Un proveedor inactivo es un proveedor "borrado": solo el admin lo sigue viendo
-        private IQueryable<Supplier> VisibleSuppliers() =>
-            IsAdmin ? _context.Suppliers : _context.Suppliers.Where(s => s.IsActive);
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
 
-        [HttpGet]
-        public async Task<IActionResult> Index(bool includeInactive = false)
+        if (!response.IsSuccess)
         {
-            // El filtro de inactivos es cosa del admin
-            includeInactive = includeInactive && IsAdmin;
-
-            var query = _context.Suppliers.AsNoTracking().AsQueryable();
-
-            if (!includeInactive)
-                query = query.Where(s => s.IsActive);
-
-            ViewData["IncludeInactive"] = includeInactive;
-
-            var suppliers = await query.ToListAsync();
-            return View(suppliers);
+            return NotFound();
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Details(int? id)
+        return View(response.Result);
+    }
+
+    [HttpGet]
+    public IActionResult Create()
+    {
+        return View(new CreateSupplierDTO());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CreateSupplierDTO dto)
+    {
+        if (!ModelState.IsValid)
         {
-            if (id == null) return NotFound();
-
-            var supplier = await VisibleSuppliers()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier == null) return NotFound();
-
-            return View(supplier);
+            return View(dto);
         }
 
-        [HttpGet]
-        public IActionResult Create()
+        Response<CreateSupplierDTO> response = await _suppliersService.CreateAsync(dto);
+
+        if (!response.IsSuccess)
         {
-            return View(new SupplierFormViewModel());
+            ModelState.AddModelError(string.Empty, response.Message);
+            return View(dto);
         }
 
-        // POST: Suppliers/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SupplierFormViewModel model)
+        TempData["Success"] = response.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
+
+        if (!response.IsSuccess)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            _context.Add(new Supplier
-            {
-                Name = model.Name,
-                Contact = model.Contact,
-                Type = model.Type,
-                Phone = model.Phone,
-                Email = model.Email,
-                Address = model.Address,
-                IsActive = model.IsActive
-            });
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return NotFound();
         }
 
-        // GET: Suppliers/Edit/5
-        [HttpGet]
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null) return NotFound();
+        SupplierDTO supplier = response.Result!;
 
-            var supplier = await VisibleSuppliers()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier == null) return NotFound();
-
-            return View(ToViewModel(supplier));
-        }
-
-        // POST: Suppliers/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, SupplierFormViewModel model)
-        {
-            if (id != model.Id) return NotFound();
-
-            if (!ModelState.IsValid) return View(model);
-
-            // Se copian los campos sobre la entidad guardada, sin escribir columnas de más
-            var supplier = await VisibleSuppliers().FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier == null) return NotFound();
-
-            supplier.Name = model.Name;
-            supplier.Contact = model.Contact;
-            supplier.Type = model.Type;
-            supplier.Phone = model.Phone;
-            supplier.Email = model.Email;
-            supplier.Address = model.Address;
-            supplier.IsActive = model.IsActive;
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Suppliers/Delete/5
-        [HttpGet]
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var supplier = await VisibleSuppliers()
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier == null) return NotFound();
-
-            return View(supplier);
-        }
-
-        // POST: Suppliers/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var supplier = await VisibleSuppliers().FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier != null)
-            {
-                supplier.IsActive = false;
-                await _context.SaveChangesAsync();
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Suppliers/HardDelete/5
-        [Authorize(Roles = Roles.Admin)]
-        [HttpGet]
-        public async Task<IActionResult> HardDelete(int? id)
-        {
-            if (id == null) return NotFound();
-
-            var supplier = await _context.Suppliers
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == id);
-            if (supplier == null) return NotFound();
-
-            return View(supplier);
-        }
-
-        // POST: Suppliers/HardDelete/5
-        [Authorize(Roles = Roles.Admin)]
-        [HttpPost, ActionName("HardDelete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> HardDeleteConfirmed(int id)
-        {
-            var supplier = await _context.Suppliers.FindAsync(id);
-            if (supplier != null)
-            {
-                _context.Suppliers.Remove(supplier);
-                await _context.SaveChangesAsync();
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        private static SupplierFormViewModel ToViewModel(Supplier supplier) => new()
+        UpdateSupplierDTO dto = new()
         {
             Id = supplier.Id,
             Name = supplier.Name,
@@ -192,5 +100,83 @@ namespace BodegaApp.Controllers
             Address = supplier.Address,
             IsActive = supplier.IsActive
         };
+
+        return View(dto);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, UpdateSupplierDTO dto)
+    {
+        if (id != dto.Id)
+        {
+            return NotFound();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(dto);
+        }
+
+        Response<SupplierDTO> response = await _suppliersService.UpdateAsync(dto, IncludeInactive);
+
+        if (!response.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, response.Message);
+            return View(dto);
+        }
+
+        TempData["Success"] = response.Message;
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Delete(int id)
+    {
+        Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
+
+        if (!response.IsSuccess)
+        {
+            return NotFound();
+        }
+
+        return View(response.Result);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        Response response = await _suppliersService.DeactivateAsync(id, IncludeInactive);
+
+        TempData[response.IsSuccess ? "Success" : "Error"] = response.Message;
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [Authorize(Roles = Roles.Admin)]
+    [HttpGet]
+    public async Task<IActionResult> HardDelete(int id)
+    {
+        Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, includeInactive: true);
+
+        if (!response.IsSuccess)
+        {
+            return NotFound();
+        }
+
+        return View(response.Result);
+    }
+
+    [Authorize(Roles = Roles.Admin)]
+    [HttpPost, ActionName("HardDelete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HardDeleteConfirmed(int id)
+    {
+        Response response = await _suppliersService.DeleteAsync(id);
+
+        TempData[response.IsSuccess ? "Success" : "Error"] = response.Message;
+
+        return RedirectToAction(nameof(Index));
     }
 }
