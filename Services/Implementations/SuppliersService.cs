@@ -42,7 +42,8 @@ public class SuppliersService : CustomQueryableOperationsService, ISuppliersServ
             response.Result.RouteValues = new Dictionary<string, string>
             {
                 ["filter"] = request.Filter?.Trim() ?? string.Empty,
-                ["includeInactive"] = request.IncludeInactive ? "true" : "false"
+                ["includeInactive"] = request.IncludeInactive ? "true" : "false",
+                ["recordsPerPage"] = request.RecordsPerPage.ToString()
             };
         }
 
