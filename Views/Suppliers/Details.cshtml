@@ -41,9 +41,12 @@
                 </a>
             }
 
-            <a asp-action="HardDelete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
-                Eliminar permanentemente
-            </a>
+            @if (User.IsInRole(Roles.Admin))
+            {
+                <a asp-action="HardDelete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                    Eliminar permanentemente
+                </a>
+            }
 
             <a asp-action="Index" class="btn btn-secondary">
                 Volver

@@ -307,6 +307,11 @@ h1, h2, h3, h4, h5 {
   font-size: .9rem;
 }
 
+/* Ancho de lectura cómodo para párrafos sueltos */
+.prose-measure {
+  max-width: 65ch;
+}
+
 .form-floating > .form-control-plaintext::placeholder,
 .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);

@@ -1,8 +1,8 @@
-@model BodegaApp.Domain.Entities.Supplier
+@model BodegaApp.Models.SupplierFormViewModel
 
 @{
     ViewData["Title"] = "Crear Proveedor";
-    var currentType = Model?.Type;
+    var currentType = Model.Type;
     var isCustomType = !SupplierTypes.IsPredefined(currentType) && !string.IsNullOrWhiteSpace(currentType);
 }
 

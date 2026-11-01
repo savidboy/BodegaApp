@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Proveedores";
     var includeInactive = (bool)(ViewData["IncludeInactive"] ?? false);
+    var isAdmin = User.IsInRole(Roles.Admin);
 }
 
 <div class="container mt-4">
@@ -10,11 +11,14 @@
         <h1 class="page-title">Proveedores</h1>
 
         <div class="d-flex gap-2 align-items-center">
-            <a asp-action="Index"
-               asp-route-includeInactive="@(!includeInactive)"
-               class="btn btn-outline-secondary btn-sm">
-                @(includeInactive ? "Ocultar inactivos" : "Ver inactivos")
-            </a>
+            @if (isAdmin)
+            {
+                <a asp-action="Index"
+                   asp-route-includeInactive="@(!includeInactive)"
+                   class="btn btn-outline-secondary btn-sm">
+                    @(includeInactive ? "Ocultar inactivos" : "Ver inactivos")
+                </a>
+            }
 
             <a asp-controller="Suppliers" asp-action="Create" class="btn btn-primary">
                 Nuevo Proveedor
@@ -74,9 +78,12 @@
                             </a>
                         }
 
-                        <a asp-action="HardDelete" asp-route-id="@supplier.Id" class="btn btn-sm btn-danger">
-                            Eliminar
-                        </a>
+                        @if (isAdmin)
+                        {
+                            <a asp-action="HardDelete" asp-route-id="@supplier.Id" class="btn btn-sm btn-danger">
+                                Eliminar
+                            </a>
+                        }
                     </td>
                 </tr>
             }

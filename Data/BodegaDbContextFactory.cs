@@ -19,8 +19,11 @@ public class BodegaDbContextFactory : IDesignTimeDbContextFactory<BodegaDbContex
             .AddEnvironmentVariables()
             .Build();
 
+        // Sin cadena de conexión no se puede generar nada; nada de credenciales por defecto aquí
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=127.0.0.1;Port=5433;Database=bodega_db;Username=savid;Password=dev_password_bodega_2026";
+            ?? throw new InvalidOperationException(
+                "Falta ConnectionStrings:DefaultConnection. Definila en appsettings.Development.json " +
+                "o en la variable de entorno ConnectionStrings__DefaultConnection antes de usar 'dotnet ef'.");
 
         var options = new DbContextOptionsBuilder<BodegaDbContext>()
             .UseNpgsql(connectionString)
