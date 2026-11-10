@@ -1,0 +1,25 @@
+@inject BodegaApp.Services.Abstractions.IAccountService Account
+
+@* Se arma según los permisos; si alguien escribe la URL, el controlador igual responde 403 *@
+<ul class="navbar-nav flex-grow-1">
+    @if (await Account.AccountUserIsAuthorizedAsync(Permissions.HomeShow))
+    {
+        <li class="nav-item">
+            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+        </li>
+    }
+
+    @if (await Account.AccountUserIsAuthorizedAsync(Permissions.SuppliersShow))
+    {
+        <li class="nav-item">
+            <a class="nav-link" asp-area="" asp-controller="Suppliers" asp-action="Index">Proveedores</a>
+        </li>
+    }
+
+    @if (await Account.AccountUserIsAuthorizedAsync(Permissions.HomeShow))
+    {
+        <li class="nav-item">
+            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacidad</a>
+        </li>
+    }
+</ul>

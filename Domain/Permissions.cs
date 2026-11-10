@@ -1,43 +1,31 @@
 namespace BodegaApp.Domain;
 
-/// <summary>
-/// Contrato único de códigos de permiso. No se escribe un código a mano en ningún
-/// controlador: se usa la constante, así el seeder y las rutas no se desincronizan.
-/// Un string distinto por una letra no da error: simplemente nadie tiene el permiso
-/// y la ruta responde 403 sin explicación.
-/// </summary>
+// Códigos de permiso. Se usan como constante para que el seeder y los
+// controladores no se desincronicen: un string distinto da 403 sin avisar.
 public static class Permissions
 {
-    // Inicio
     public const string HomeShow = "home.show";
 
-    // Proveedores
     public const string SuppliersShow = "suppliers.show";
     public const string SuppliersCreate = "suppliers.create";
     public const string SuppliersUpdate = "suppliers.update";
     public const string SuppliersDelete = "suppliers.delete";
 
-    // Usuarios
     public const string UsersShow = "users.show";
     public const string UsersCreate = "users.create";
     public const string UsersUpdate = "users.update";
     public const string UsersDelete = "users.delete";
 
-    // Roles: no hay roles.delete a propósito. La rúbrica pide crear, consultar y
-    // editar. Borrar un rol deja usuarios huérfanos, así que se le quitan permisos.
+    // Sin roles.delete: borrar un rol deja usuarios huérfanos, se le quitan permisos
     public const string RolesShow = "roles.show";
     public const string RolesCreate = "roles.create";
     public const string RolesUpdate = "roles.update";
 
-    // Productos: declarados para el módulo que viene, todavía sin controlador
     public const string ProductsShow = "products.show";
     public const string ProductsCreate = "products.create";
     public const string ProductsUpdate = "products.update";
     public const string ProductsDelete = "products.delete";
 
-    /// <summary>
-    /// Catálogo completo. El seeder crea una fila por cada elemento de esta lista.
-    /// </summary>
     public static readonly PermissionSeed[] All =
     [
         new(HomeShow, "Acceder al inicio", "Inicio"),
@@ -62,7 +50,6 @@ public static class Permissions
         new(ProductsDelete, "Desactivar y eliminar productos", "Productos")
     ];
 
-    /// <summary>Módulos distintos, para agrupar la matriz de permisos por módulo.</summary>
     public static IEnumerable<string> Modules =>
         All.Select(permission => permission.Module).Distinct();
 

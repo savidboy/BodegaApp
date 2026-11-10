@@ -1,9 +1,16 @@
 @model PaginationResponse<SupplierDTO>
 
-@{
+@inject BodegaApp.Services.Abstractions.IAccountService Account
+
+@{ 
     ViewData["Title"] = "Proveedores";
     var isAdmin = User.IsInRole(Roles.Admin);
     var includeInactive = Model.RouteValues.GetValueOrDefault("includeInactive") == "true";
+
+    // Los botones se ocultan por comodidad; el controlador valida el permiso igual
+    var canCreate = await Account.AccountUserIsAuthorizedAsync(Permissions.SuppliersCreate);
+    var canUpdate = await Account.AccountUserIsAuthorizedAsync(Permissions.SuppliersUpdate);
+    var canDelete = await Account.AccountUserIsAuthorizedAsync(Permissions.SuppliersDelete);
 }
 
 <div class="container mt-4">
@@ -21,7 +28,10 @@
                 </a>
             }
 
-            <a asp-action="Create" class="btn btn-primary">Nuevo proveedor</a>
+            @if (canCreate)
+            {
+                <a asp-action="Create" class="btn btn-primary">Nuevo proveedor</a>
+            }
         </div>
     </div>
 
@@ -74,16 +84,20 @@
                     </td>
                     <td class="text-end">
                         <a asp-action="Details" asp-route-id="@supplier.Id" class="btn btn-sm btn-info">Ver</a>
-                        <a asp-action="Edit" asp-route-id="@supplier.Id" class="btn btn-sm btn-warning">Editar</a>
 
-                        @if (supplier.IsActive)
+                        @if (canUpdate)
+                        {
+                            <a asp-action="Edit" asp-route-id="@supplier.Id" class="btn btn-sm btn-warning">Editar</a>
+                        }
+
+                        @if (canDelete && supplier.IsActive)
                         {
                             <a asp-action="Delete" asp-route-id="@supplier.Id" class="btn btn-sm btn-outline-secondary">
                                 Desactivar
                             </a>
                         }
 
-                        @if (isAdmin)
+                        @if (isAdmin && canDelete)
                         {
                             <a asp-action="HardDelete" asp-route-id="@supplier.Id" class="btn btn-sm btn-danger">
                                 Eliminar

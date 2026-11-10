@@ -26,9 +26,19 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 // El seed genera el token con el que se sincroniza la contraseña del administrador
 .AddDefaultTokenProviders();
 
+// Si cambia el security stamp (logout), la cookie vieja deja de servir
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.FromMinutes(5);
+});
+
 builder.Services.AddAutoMapper(configuration => { }, typeof(AutoMapperProfiles));
 
 builder.Services.AddScoped<ISuppliersService, SuppliersService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+
+// El filtro de permisos y las vistas leen el usuario de la sesión
+builder.Services.AddHttpContextAccessor();
 
 // El túnel de Cloudflare termina el TLS y reenvía HTTP, así que sin esto la app no ve X-Forwarded-Proto
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

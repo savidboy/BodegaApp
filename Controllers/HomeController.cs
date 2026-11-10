@@ -1,18 +1,21 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using BodegaApp.Core.Attributes;
+using BodegaApp.Domain;
 using BodegaApp.Models;
 
 namespace BodegaApp.Controllers;
 
-[Authorize]
 public class HomeController : Controller
 {
+    [CustomAuthorize(Permissions.HomeShow)]
     public IActionResult Index()
     {
         return View();
     }
 
+    [CustomAuthorize(Permissions.HomeShow)]
     public IActionResult Privacy()
     {
         return View();

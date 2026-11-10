@@ -11,6 +11,8 @@ public static class SeedDb
 
         await context.Database.MigrateAsync();
 
+        // Primero roles y permisos: AccountSeeder necesita el rol Almacen para el usuario demo
+        await PermissionsSeeder.SeedAsync(scope.ServiceProvider);
         await AccountSeeder.SeedAsync(scope.ServiceProvider);
         await SuppliersSeeder.SeedAsync(context);
     }

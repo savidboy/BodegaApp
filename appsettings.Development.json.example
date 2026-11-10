@@ -4,7 +4,9 @@
   },
   "Seed": {
     "AdminEmail": "admin@bodega.com",
-    "AdminPassword": "<PASSWORD_ADMIN>"
+    "AdminPassword": "<PASSWORD>",
+    "WarehouseEmail": "almacen@bodega.com",
+    "WarehousePassword": "<PASSWORD_ALMACEN>"
   },
   "Logging": {
     "LogLevel": {

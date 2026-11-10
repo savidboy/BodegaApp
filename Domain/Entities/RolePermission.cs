@@ -2,9 +2,6 @@ using Microsoft.AspNetCore.Identity;
 
 namespace BodegaApp.Domain.Entities;
 
-/// <summary>
-/// Tabla puente entre un rol de Identity y un permiso.
-/// </summary>
 public class RolePermission
 {
     public string RoleId { get; set; } = null!;

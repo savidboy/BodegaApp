@@ -1,50 +1,71 @@
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using BodegaApp.Domain.Entities;
+using BodegaApp.Core;
 using BodegaApp.Models;
+using BodegaApp.Services.Abstractions;
+using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace BodegaApp.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly SignInManager<User> _signInManager;
+    private readonly IAccountService _accountService;
 
-    public AccountController(SignInManager<User> signInManager)
+    public AccountController(IAccountService accountService)
     {
-        _signInManager = signInManager;
+        _accountService = accountService;
     }
 
+    [AllowAnonymous]
     [HttpGet]
-    public IActionResult Login() => View();
+    public IActionResult Login(string? returnUrl = null)
+    {
+        ViewData["ReturnUrl"] = returnUrl;
+        return View();
+    }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting("login")]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
     {
-        if (!ModelState.IsValid) return View(model);
+        ViewData["ReturnUrl"] = returnUrl;
 
-        // Bloqueo temporal tras varios intentos fallidos
-        var result = await _signInManager.PasswordSignInAsync(
-            model.Email, model.Password, model.RememberMe, true);
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
 
-        if (result.Succeeded)
-            return RedirectToAction("Index", "Home");
+        Response<SignInResult> response = await _accountService.LoginAsync(
+            model.Email, model.Password, model.RememberMe);
 
-        ModelState.AddModelError("", "Correo o contraseña incorrectos");
+        if (response.IsSuccess)
+        {
+            // IsLocalUrl evita que el login sirva para sacar al usuario del sitio
+            return Url.IsLocalUrl(returnUrl)
+                ? Redirect(returnUrl)
+                : RedirectToAction("Index", "Home");
+        }
+
+        ModelState.AddModelError(string.Empty, response.Message);
+
         return View(model);
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await _signInManager.SignOutAsync();
-        return RedirectToAction("Login", "Account");
+        await _accountService.LogoutAsync();
+
+        return RedirectToAction(nameof(Login));
     }
 
-    // Identity manda aquí al usuario que ya entró pero no tiene el rol necesario
+    // Identity manda aquí al usuario que ya entró pero no tiene el permiso
+    [AllowAnonymous]
     [HttpGet]
     public IActionResult AccessDenied()
     {

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BodegaApp.Core;
+using BodegaApp.Core.Attributes;
 using BodegaApp.Core.Pagination;
 using BodegaApp.Domain;
 using BodegaApp.DTOs.Supplier;
@@ -8,7 +9,6 @@ using BodegaApp.Services.Abstractions;
 
 namespace BodegaApp.Controllers;
 
-[Authorize]
 public class SuppliersController : Controller
 {
     private readonly ISuppliersService _suppliersService;
@@ -22,6 +22,7 @@ public class SuppliersController : Controller
     private bool IncludeInactive => User.IsInRole(Roles.Admin);
 
     [HttpGet]
+    [CustomAuthorize(Permissions.SuppliersShow)]
     public async Task<IActionResult> Index([FromQuery] SupplierPaginationRequest request)
     {
         request.IncludeInactive = request.IncludeInactive && IncludeInactive;
@@ -38,6 +39,7 @@ public class SuppliersController : Controller
     }
 
     [HttpGet]
+    [CustomAuthorize(Permissions.SuppliersShow)]
     public async Task<IActionResult> Details(int id)
     {
         Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
@@ -51,12 +53,14 @@ public class SuppliersController : Controller
     }
 
     [HttpGet]
+    [CustomAuthorize(Permissions.SuppliersCreate)]
     public IActionResult Create()
     {
         return View(new CreateSupplierDTO());
     }
 
     [HttpPost]
+    [CustomAuthorize(Permissions.SuppliersCreate)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateSupplierDTO dto)
     {
@@ -78,6 +82,7 @@ public class SuppliersController : Controller
     }
 
     [HttpGet]
+    [CustomAuthorize(Permissions.SuppliersUpdate)]
     public async Task<IActionResult> Edit(int id)
     {
         Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
@@ -105,6 +110,7 @@ public class SuppliersController : Controller
     }
 
     [HttpPost]
+    [CustomAuthorize(Permissions.SuppliersUpdate)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, UpdateSupplierDTO dto)
     {
@@ -131,6 +137,7 @@ public class SuppliersController : Controller
     }
 
     [HttpGet]
+    [CustomAuthorize(Permissions.SuppliersDelete)]
     public async Task<IActionResult> Delete(int id)
     {
         Response<SupplierDTO> response = await _suppliersService.GetOneAsync(id, IncludeInactive);
@@ -144,6 +151,7 @@ public class SuppliersController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
+    [CustomAuthorize(Permissions.SuppliersDelete)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
@@ -154,7 +162,9 @@ public class SuppliersController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // Borrado definitivo: sigue siendo solo para Admin, además del permiso
     [Authorize(Roles = Roles.Admin)]
+    [CustomAuthorize(Permissions.SuppliersDelete)]
     [HttpGet]
     public async Task<IActionResult> HardDelete(int id)
     {
@@ -169,6 +179,7 @@ public class SuppliersController : Controller
     }
 
     [Authorize(Roles = Roles.Admin)]
+    [CustomAuthorize(Permissions.SuppliersDelete)]
     [HttpPost, ActionName("HardDelete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> HardDeleteConfirmed(int id)

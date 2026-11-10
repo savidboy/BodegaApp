@@ -75,6 +75,51 @@ public static class AccountSeeder
             await userManager.AddToRoleAsync(admin, Roles.Admin);
             logger.LogInformation("Usuario {Email} asignado al rol {Role}.", adminEmail, Roles.Admin);
         }
+
+        await SeedWarehouseUserAsync(userManager, configuration, logger);
+    }
+
+    // Usuario operativo para probar los permisos. Sin las claves de config no se crea
+    private static async Task SeedWarehouseUserAsync(
+        UserManager<User> userManager,
+        IConfiguration configuration,
+        ILogger logger)
+    {
+        string? email = configuration["Seed:WarehouseEmail"];
+        string? password = configuration["Seed:WarehousePassword"];
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return;
+        }
+
+        User? warehouse = await userManager.FindByEmailAsync(email);
+
+        if (warehouse is null)
+        {
+            warehouse = new User
+            {
+                UserName = email,
+                Email = email,
+                FullName = "Operador de almacén",
+                EmailConfirmed = true
+            };
+
+            IdentityResult created = await userManager.CreateAsync(warehouse, password);
+
+            if (!created.Succeeded)
+            {
+                throw new InvalidOperationException($"No se pudo crear {email}: {Describe(created)}");
+            }
+
+            logger.LogInformation("Usuario {Email} creado.", email);
+        }
+
+        if (!await userManager.IsInRoleAsync(warehouse, Roles.Warehouse))
+        {
+            await userManager.AddToRoleAsync(warehouse, Roles.Warehouse);
+            logger.LogInformation("Usuario {Email} asignado al rol {Role}.", email, Roles.Warehouse);
+        }
     }
 
     private static string Describe(IdentityResult result) =>

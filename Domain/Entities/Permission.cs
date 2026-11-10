@@ -3,10 +3,6 @@ using BodegaApp.Data.Abstractions;
 
 namespace BodegaApp.Domain.Entities;
 
-/// <summary>
-/// Permiso atómico que se concede a un rol. El código es el que se usa en
-/// [CustomAuthorize("suppliers.create")] y debe coincidir con <see cref="Domain.Permissions"/>.
-/// </summary>
 public class Permission : IId
 {
     [Key]
