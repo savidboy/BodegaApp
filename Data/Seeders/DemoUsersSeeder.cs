@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Identity;
 using BodegaApp.Domain;
 using BodegaApp.Domain.Entities;
@@ -12,55 +11,47 @@ public static class DemoUsersSeeder
 
     public static async Task SeedAsync(IServiceProvider services)
     {
-        UserManager<User> userManager =
-            services.GetRequiredService<UserManager<User>>();
+        UserManager<User> userManager = services.GetRequiredService<UserManager<User>>();
+        RoleManager<IdentityRole> roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        IConfiguration configuration = services.GetRequiredService<IConfiguration>();
+        ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DemoUsersSeeder));
 
-        RoleManager<IdentityRole> roleManager =
-            services.GetRequiredService<RoleManager<IdentityRole>>();
+        string adminEmail = GetConfiguredEmail(configuration, "Seed:AdminEmail", DefaultAdminEmail);
+        string adminPassword = GetRequiredPassword(configuration, "Seed:AdminPassword");
 
-        IConfiguration configuration =
-            services.GetRequiredService<IConfiguration>();
-
-        ILogger logger = services.GetRequiredService<ILoggerFactory>()
-            .CreateLogger(typeof(DemoUsersSeeder));
-
-        string adminEmail = GetConfiguredEmail(
-            configuration, "Seed:AdminEmail", DefaultAdminEmail);
-
-        string warehouseEmail = GetConfiguredEmail(
-            configuration, "Seed:WarehouseEmail", DefaultWarehouseEmail);
-
-        string adminPassword = GetRequiredPassword(
-            configuration, "Seed:AdminPassword");
-
-        string warehousePassword = GetRequiredPassword(
-            configuration, "Seed:WarehousePassword");
-
-        if (string.Equals(
-            adminEmail, warehouseEmail,
-            StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                "El administrador y el usuario de almacén deben tener correos diferentes.");
-        }
-
-        // Los roles deben existir antes de crear los usuarios.
         await EnsureRoleExistsAsync(roleManager, Roles.Admin);
-        await EnsureRoleExistsAsync(roleManager, Roles.Warehouse);
 
         await SeedUserAsync(
             userManager,
             adminEmail,
             adminPassword,
-            "Administrador Demo",
+            "Administrador",
             Roles.Admin,
             logger);
+
+        string warehouseEmail = GetConfiguredEmail(configuration, "Seed:WarehouseEmail", DefaultWarehouseEmail);
+        string? warehousePassword = configuration["Seed:WarehousePassword"];
+
+        // Sin contraseña configurada no se crea el usuario de almacén
+        if (string.IsNullOrWhiteSpace(warehousePassword))
+        {
+            logger.LogInformation("Sin Seed:WarehousePassword no se crea el usuario de almacén.");
+            return;
+        }
+
+        if (string.Equals(adminEmail, warehouseEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "El administrador y el usuario de almacén deben tener correos diferentes.");
+        }
+
+        await EnsureRoleExistsAsync(roleManager, Roles.Warehouse);
 
         await SeedUserAsync(
             userManager,
             warehouseEmail,
             warehousePassword,
-            "Operador de Almacén Demo",
+            "Operador de almacén",
             Roles.Warehouse,
             logger);
     }
@@ -85,47 +76,36 @@ public static class DemoUsersSeeder
                 EmailConfirmed = true
             };
 
-            IdentityResult created =
-                await userManager.CreateAsync(user, password);
+            IdentityResult created = await userManager.CreateAsync(user, password);
 
             if (!created.Succeeded)
             {
-                throw new InvalidOperationException(
-                    $"No se pudo crear {email}: {Describe(created)}");
+                throw new InvalidOperationException($"No se pudo crear {email}: {Describe(created)}");
             }
 
-            logger.LogInformation(
-                "Usuario demo {Email} creado.", email);
+            logger.LogInformation("Usuario demo {Email} creado.", email);
         }
-
-        // Cada cuenta demo conserva únicamente su rol asignado.
-        IList<string> existingRoles =
-            await userManager.GetRolesAsync(user);
-
-        string[] unexpectedRoles = existingRoles
-            .Where(existingRole =>
-                !string.Equals(
-                    existingRole, role,
-                    StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        if (unexpectedRoles.Length > 0)
+        else if (!await userManager.CheckPasswordAsync(user, password))
         {
-            IdentityResult removed =
-                await userManager.RemoveFromRolesAsync(
-                    user, unexpectedRoles);
+            // La contraseña del config manda: si cambió, se actualiza en la base
+            string token = await userManager.GeneratePasswordResetTokenAsync(user);
+            IdentityResult reset = await userManager.ResetPasswordAsync(user, token, password);
 
-            if (!removed.Succeeded)
+            if (!reset.Succeeded)
             {
                 throw new InvalidOperationException(
-                    $"No se pudieron corregir los roles de {email}: {Describe(removed)}");
+                    $"No se pudo actualizar la contraseña de {email}: {Describe(reset)}");
             }
+
+            await userManager.ResetAccessFailedCountAsync(user);
+            await userManager.SetLockoutEndDateAsync(user, null);
+
+            logger.LogInformation("Contraseña de {Email} sincronizada con la configuración.", email);
         }
 
         if (!await userManager.IsInRoleAsync(user, role))
         {
-            IdentityResult assigned =
-                await userManager.AddToRoleAsync(user, role);
+            IdentityResult assigned = await userManager.AddToRoleAsync(user, role);
 
             if (!assigned.Succeeded)
             {
@@ -133,14 +113,11 @@ public static class DemoUsersSeeder
                     $"No se pudo asignar el rol {role} a {email}: {Describe(assigned)}");
             }
 
-            logger.LogInformation(
-                "Usuario {Email} asignado al rol {Role}.", email, role);
+            logger.LogInformation("Usuario {Email} asignado al rol {Role}.", email, role);
         }
     }
 
-    private static async Task EnsureRoleExistsAsync(
-        RoleManager<IdentityRole> roleManager,
-        string role)
+    private static async Task EnsureRoleExistsAsync(RoleManager<IdentityRole> roleManager, string role)
     {
         if (!await roleManager.RoleExistsAsync(role))
         {
@@ -149,28 +126,20 @@ public static class DemoUsersSeeder
         }
     }
 
-    private static string GetConfiguredEmail(
-        IConfiguration configuration,
-        string key,
-        string defaultEmail)
+    private static string GetConfiguredEmail(IConfiguration configuration, string key, string defaultEmail)
     {
         string? email = configuration[key];
 
-        return string.IsNullOrWhiteSpace(email)
-            ? defaultEmail
-            : email.Trim();
+        return string.IsNullOrWhiteSpace(email) ? defaultEmail : email.Trim();
     }
 
-    private static string GetRequiredPassword(
-        IConfiguration configuration,
-        string key)
+    private static string GetRequiredPassword(IConfiguration configuration, string key)
     {
         string? password = configuration[key];
 
         if (string.IsNullOrWhiteSpace(password))
         {
-            string environmentVariable =
-                key.Replace(":", "__", StringComparison.Ordinal);
+            string environmentVariable = key.Replace(":", "__", StringComparison.Ordinal);
 
             throw new InvalidOperationException(
                 $"Falta {key}. Configúrala en appsettings.Development.json " +
