@@ -6,6 +6,7 @@ using BodegaApp.Data;
 using BodegaApp.Domain;
 using BodegaApp.Domain.Entities;
 using BodegaApp.Services.Abstractions;
+using BodegaApp.DTOs.Account;
 
 namespace BodegaApp.Services.Implementations;
 
@@ -119,6 +120,42 @@ public class AccountService : IAccountService
             : Response<User>.Success(user, "Usuario de la sesión.");
     }
 
+    public async Task<Response<bool>> UpdateUserAsync(AccountUserDTO dto)
+    {
+        HttpContext? httpContext = _httpContextAccessor.HttpContext;
+        ClaimsPrincipal? principal = httpContext?.User;
+
+        if (principal?.Identity is null || !principal.Identity.IsAuthenticated)
+        {
+            return Response<bool>.Failure("No hay una sesión activa.");
+        }
+
+        User? currentUser = await _userManager.GetUserAsync(principal);
+
+        if (currentUser is null)
+        {
+            return Response<bool>.Failure("No se encontró el usuario.");
+        }
+
+        if (currentUser.Id != dto.Id)
+        {
+            return Response<bool>.Failure("No puedes modificar otro usuario.");
+        }
+
+        currentUser.FullName = dto.FullName;
+        currentUser.Email = dto.Email;
+        currentUser.UserName = dto.Email;
+
+        IdentityResult result = await _userManager.UpdateAsync(currentUser);
+
+        if (!result.Succeeded)
+        {
+            return Response<bool>.Failure(
+                string.Join(", ", result.Errors.Select(error => error.Description)));
+        }
+
+        return Response<bool>.Success(true, "Usuario actualizado correctamente.");
+    }
     private async Task<HashSet<string>> GetGrantedCodesAsync(HttpContext httpContext, ClaimsPrincipal principal)
     {
         // Se guarda por request: una vista que consulta 8 permisos no hace 8 consultas
