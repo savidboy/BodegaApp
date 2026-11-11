@@ -86,7 +86,9 @@ builder.Services.AddRateLimiter(options =>
 
 WebApplication app = builder.Build();
 
-await SeedDb.SeedAsync(app.Services);
+
+await SeedDb.SeedAsync(app.Services, app.Environment);
+
 
 app.UseForwardedHeaders();
 
