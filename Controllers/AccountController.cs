@@ -2,10 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using BodegaApp.Core;
+using BodegaApp.Domain.Entities;
+using BodegaApp.DTOs.Account;
 using BodegaApp.Models;
 using BodegaApp.Services.Abstractions;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
-using BodegaApp.DTOs.Account;
 
 namespace BodegaApp.Controllers;
 
@@ -59,14 +60,14 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> UpdateUser()
     {
-        var response = await _accountService.GetCurrentUserAsync();
+        Response<User> response = await _accountService.GetCurrentUserAsync();
 
         if (!response.IsSuccess || response.Result is null)
         {
             return RedirectToAction(nameof(Login));
         }
 
-        AccountUserDTO dto = new AccountUserDTO
+        AccountUserDTO dto = new()
         {
             Id = response.Result.Id,
             FullName = response.Result.FullName,
@@ -86,7 +87,7 @@ public class AccountController : Controller
             return View(dto);
         }
 
-        var response = await _accountService.UpdateUserAsync(dto);
+        Response<bool> response = await _accountService.UpdateUserAsync(dto);
 
         if (!response.IsSuccess)
         {
@@ -94,8 +95,10 @@ public class AccountController : Controller
             return View(dto);
         }
 
+        TempData["Success"] = response.Message;
+
         return RedirectToAction(nameof(UpdateUser));
-}
+    }
 
     [Authorize]
     [HttpPost]

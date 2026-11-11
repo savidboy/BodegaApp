@@ -25,6 +25,9 @@
                             <li class="nav-item me-3">
                                 <span class="user-chip">@User.Identity.Name</span>
                             </li>
+                            <li class="nav-item me-3">
+                                <a class="nav-link" asp-controller="Account" asp-action="UpdateUser">Mis datos</a>
+                            </li>
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     <button type="submit" class="btn btn-outline-secondary btn-sm">Cerrar Sesión</button>

@@ -122,8 +122,7 @@ public class AccountService : IAccountService
 
     public async Task<Response<bool>> UpdateUserAsync(AccountUserDTO dto)
     {
-        HttpContext? httpContext = _httpContextAccessor.HttpContext;
-        ClaimsPrincipal? principal = httpContext?.User;
+        ClaimsPrincipal? principal = _httpContextAccessor.HttpContext?.User;
 
         if (principal?.Identity is null || !principal.Identity.IsAuthenticated)
         {
@@ -142,9 +141,28 @@ public class AccountService : IAccountService
             return Response<bool>.Failure("No puedes modificar otro usuario.");
         }
 
-        currentUser.FullName = dto.FullName;
-        currentUser.Email = dto.Email;
-        currentUser.UserName = dto.Email;
+        string email = dto.Email.Trim();
+        bool emailChanged = !string.Equals(currentUser.Email, email, StringComparison.OrdinalIgnoreCase);
+
+        if (emailChanged)
+        {
+            User? owner = await _userManager.FindByEmailAsync(email);
+
+            if (owner is not null && owner.Id != currentUser.Id)
+            {
+                return Response<bool>.Failure("Ese correo ya lo usa otro usuario.");
+            }
+        }
+
+        currentUser.FullName = dto.FullName.Trim();
+        currentUser.Email = email;
+        currentUser.UserName = email;
+
+        if (emailChanged)
+        {
+            // El correo nuevo queda sin verificar
+            currentUser.EmailConfirmed = false;
+        }
 
         IdentityResult result = await _userManager.UpdateAsync(currentUser);
 
@@ -154,8 +172,12 @@ public class AccountService : IAccountService
                 string.Join(", ", result.Errors.Select(error => error.Description)));
         }
 
-        return Response<bool>.Success(true, "Usuario actualizado correctamente.");
+        // Renueva la cookie para que el menú muestre el correo nuevo
+        await _signInManager.RefreshSignInAsync(currentUser);
+
+        return Response<bool>.Success(true, "Datos actualizados correctamente.");
     }
+
     private async Task<HashSet<string>> GetGrantedCodesAsync(HttpContext httpContext, ClaimsPrincipal principal)
     {
         // Se guarda por request: una vista que consulta 8 permisos no hace 8 consultas
