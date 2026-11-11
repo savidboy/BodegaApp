@@ -5,6 +5,7 @@ using BodegaApp.Core;
 using BodegaApp.Models;
 using BodegaApp.Services.Abstractions;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
+using BodegaApp.DTOs.Account;
 
 namespace BodegaApp.Controllers;
 
@@ -53,6 +54,48 @@ public class AccountController : Controller
 
         return View(model);
     }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> UpdateUser()
+    {
+        var response = await _accountService.GetCurrentUserAsync();
+
+        if (!response.IsSuccess || response.Result is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        AccountUserDTO dto = new AccountUserDTO
+        {
+            Id = response.Result.Id,
+            FullName = response.Result.FullName,
+            Email = response.Result.Email ?? string.Empty
+        };
+
+        return View(dto);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateUser(AccountUserDTO dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(dto);
+        }
+
+        var response = await _accountService.UpdateUserAsync(dto);
+
+        if (!response.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, response.Message);
+            return View(dto);
+        }
+
+        return RedirectToAction(nameof(UpdateUser));
+}
 
     [Authorize]
     [HttpPost]

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using BodegaApp.Core;
 using BodegaApp.Domain.Entities;
+using BodegaApp.DTOs.Account;
 
 namespace BodegaApp.Services.Abstractions;
 
@@ -14,4 +15,6 @@ public interface IAccountService
     Task<bool> AccountUserIsSuperAdminAsync();
 
     Task<Response<User>> GetCurrentUserAsync();
+
+    Task<Response<bool>> UpdateUserAsync(AccountUserDTO dto);
 }
