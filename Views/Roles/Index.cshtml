@@ -28,11 +28,18 @@
                     <td>@role.Name</td>
 
                     <td class="text-end">
-                        <a asp-action="Edit"
-                           asp-route-id="@role.Id"
-                           class="btn btn-sm btn-warning">
-                            Editar permisos
-                        </a>
+                        @if (role.Name == Roles.Admin)
+                        {
+                            <span class="text-muted">Acceso total</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Edit"
+                               asp-route-id="@role.Id"
+                               class="btn btn-sm btn-warning">
+                                Editar permisos
+                            </a>
+                        }
                     </td>
                 </tr>
             }

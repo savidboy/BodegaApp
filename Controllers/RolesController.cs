@@ -22,7 +22,6 @@ public class RolesController : Controller
         _context = context;
     }
 
-    // LISTAR ROLES
     [HttpGet]
     [CustomAuthorize(Permissions.RolesShow)]
     public async Task<IActionResult> Index()
@@ -34,7 +33,6 @@ public class RolesController : Controller
         return View(roles);
     }
 
-    // MOSTRAR FORMULARIO DE CREACIÓN
     [HttpGet]
     [CustomAuthorize(Permissions.RolesCreate)]
     public async Task<IActionResult> Create()
@@ -50,13 +48,12 @@ public class RolesController : Controller
         return View(model);
     }
 
-    // CREAR ROL Y ASIGNAR PERMISOS
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.RolesCreate)]
     public async Task<IActionResult> Create(RoleFormViewModel model)
     {
-        model.RoleName = model.RoleName.Trim();
+        model.RoleName = model.RoleName?.Trim() ?? string.Empty;
 
         if (await _roleManager.RoleExistsAsync(model.RoleName))
         {
@@ -117,7 +114,6 @@ public class RolesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // MOSTRAR FORMULARIO DE EDICIÓN
     [HttpGet]
     [CustomAuthorize(Permissions.RolesUpdate)]
     public async Task<IActionResult> Edit(string id)
@@ -127,6 +123,13 @@ public class RolesController : Controller
         if (role is null)
         {
             return NotFound();
+        }
+
+        if (role.Name == Roles.Admin)
+        {
+            TempData["Error"] = "El rol Admin no se edita: tiene acceso a todo por encima de la tabla de permisos.";
+
+            return RedirectToAction(nameof(Index));
         }
 
         List<int> selectedIds = await _context.RolePermissions
@@ -148,7 +151,6 @@ public class RolesController : Controller
         return View(model);
     }
 
-    // ACTUALIZAR PERMISOS DEL ROL
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.RolesUpdate)]
@@ -164,6 +166,13 @@ public class RolesController : Controller
         if (role is null)
         {
             return NotFound();
+        }
+
+        if (role.Name == Roles.Admin)
+        {
+            TempData["Error"] = "El rol Admin no se edita: tiene acceso a todo por encima de la tabla de permisos.";
+
+            return RedirectToAction(nameof(Index));
         }
 
         List<int> selectedIds = model.SelectedPermissionIds
@@ -209,7 +218,6 @@ public class RolesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // CARGAR PERMISOS CUANDO HAY ERRORES DE VALIDACIÓN
     private async Task LoadPermissions(RoleFormViewModel model)
     {
         model.Permissions = await _context.Permissions
