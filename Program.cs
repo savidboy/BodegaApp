@@ -36,6 +36,7 @@ builder.Services.AddAutoMapper(configuration => { }, typeof(AutoMapperProfiles))
 
 builder.Services.AddScoped<ISuppliersService, SuppliersService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
 
 // El filtro de permisos y las vistas leen el usuario de la sesión
 builder.Services.AddHttpContextAccessor();

@@ -1,35 +1,76 @@
-@model BodegaApp.DTOs.User.UserCreateDTO
+@model UserCreateDTO
 
 @{
-    ViewData["Title"] = "Crear Usuario";
+    ViewData["Title"] = "Crear usuario";
 }
 
 <div class="container mt-4">
-    <h2>Crear Nuevo Usuario</h2>
-    <form asp-action="Create" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        
-        <div class="mb-3">
-            <label asp-for="Email" class="form-label">Correo Electrónico</label>
-            <input asp-for="Email" class="form-control" />
-            <span asp-validation-for="Email" class="text-danger"></span>
-        </div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="page-title">Crear usuario</h1>
 
-        <div class="mb-3">
-            <label asp-for="Password" class="form-label">Contraseña</label>
-            <input asp-for="Password" type="password" class="form-control" />
-            <span asp-validation-for="Password" class="text-danger"></span>
-        </div>
+            <div class="card mt-3">
+                <div class="card-body p-4">
 
-        <div class="mb-3">
-            <label asp-for="Role" class="form-label">Rol</label>
-            <select asp-for="Role" asp-items="ViewBag.Roles" class="form-control">
-                <option value="">-- Seleccione un Rol --</option>
-            </select>
-            <span asp-validation-for="Role" class="text-danger"></span>
-        </div>
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
 
-        <button type="submit" class="btn btn-success">Guardar</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-    </form>
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label">Nombre</label>
+                            <input asp-for="FullName" class="form-control" placeholder="Ej. Ana Torres" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Correo</label>
+                            <input asp-for="Email" class="form-control" placeholder="Ej. ana@bodega.com" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Password" class="form-label">Contraseña</label>
+                            <input asp-for="Password" class="form-control" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <h5>Roles del usuario</h5>
+
+                        <p class="text-muted">
+                            Marca los roles que tendrá el usuario. Necesita al menos un rol para poder entrar.
+                        </p>
+
+                        @foreach (var role in Model.Roles)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="SelectedRoleIds"
+                                       value="@role.Id"
+                                       id="role_@role.Id"
+                                       checked="@Model.SelectedRoleIds.Contains(role.Id)" />
+
+                                <label class="form-check-label" for="role_@role.Id">
+                                    @role.Name
+                                </label>
+                            </div>
+                        }
+
+                        <span asp-validation-for="SelectedRoleIds" class="text-danger"></span>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

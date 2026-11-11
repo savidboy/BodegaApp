@@ -1,0 +1,47 @@
+@model UserViewModel
+
+@{
+    ViewData["Title"] = "Eliminar usuario";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="page-title text-danger">Eliminar usuario</h1>
+
+            <div class="alert alert-warning mt-3">
+                ¿Está seguro de que desea eliminar este usuario? Se le quita el acceso al sistema.
+            </div>
+
+            <div class="card mt-3 border-danger">
+                <div class="card-body">
+                    <h4 class="card-title text-danger">@Model.FullName</h4>
+
+                    <p><strong>Correo:</strong> @Model.Email</p>
+
+                    <p>
+                        <strong>Roles:</strong>
+                        @if (Model.Roles.Count == 0)
+                        {
+                            <span class="text-muted">Sin rol</span>
+                        }
+                        else
+                        {
+                            foreach (string role in Model.Roles)
+                            {
+                                <span class="badge bg-secondary">@role</span>
+                            }
+                        }
+                    </p>
+
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="mt-4">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
