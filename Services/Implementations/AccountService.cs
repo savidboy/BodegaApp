@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BodegaApp.Core;
 using BodegaApp.Data;
 using BodegaApp.Domain;
+using BodegaApp.Helpers;
 using BodegaApp.Domain.Entities;
 using BodegaApp.Services.Abstractions;
 using BodegaApp.DTOs.Account;
@@ -18,17 +19,20 @@ public class AccountService : IAccountService
     private readonly SignInManager<User> _signInManager;
     private readonly BodegaDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAuthHelper _authHelper;
 
     public AccountService(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         BodegaDbContext context,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IAuthHelper authHelper)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
         _httpContextAccessor = httpContextAccessor;
+        _authHelper = authHelper;
     }
 
     public async Task<Response<SignInResult>> LoginAsync(string email, string password, bool rememberMe)
@@ -54,15 +58,8 @@ public class AccountService : IAccountService
 
         if (principal is not null)
         {
-            User? user = await _userManager.GetUserAsync(principal);
-
-            if (user is not null)
-            {
-                await _userManager.UpdateSecurityStampAsync(user);
-            }
+            await _authHelper.LogoutAndInvalidateSessionAsync(principal);
         }
-
-        await _signInManager.SignOutAsync();
     }
 
     public bool AccountUserIsAuthenticated()
