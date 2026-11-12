@@ -1,9 +1,8 @@
 ﻿using System.Security.Claims;
 
-namespace BodegaApp.Helpers
+namespace BodegaApp.Helpers;
+
+public interface IAuthHelper
 {
-    public interface IAuthHelper
-    {
-        Task LogoutAndInvalidateSessionAsync(ClaimsPrincipal userPrincipal);
-    }
+    Task LogoutAndInvalidateSessionAsync(ClaimsPrincipal userPrincipal);
 }

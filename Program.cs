@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using BodegaApp.Core;
+using BodegaApp.Helpers;
 using BodegaApp.Data;
 using BodegaApp.Data.Seeders;
 using BodegaApp.Domain.Entities;
@@ -37,6 +38,7 @@ builder.Services.AddAutoMapper(configuration => { }, typeof(AutoMapperProfiles))
 builder.Services.AddScoped<ISuppliersService, SuppliersService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
+builder.Services.AddScoped<IAuthHelper, AuthHelper>();
 
 // El filtro de permisos y las vistas leen el usuario de la sesión
 builder.Services.AddHttpContextAccessor();

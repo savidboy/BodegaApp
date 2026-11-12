@@ -1,31 +1,31 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using BodegaApp.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
-namespace BodegaApp.Helpers
+namespace BodegaApp.Helpers;
+
+public class AuthHelper : IAuthHelper
 {
-    public class AuthHelper : IAuthHelper
+    private readonly SignInManager<User> _signInManager;
+    private readonly UserManager<User> _userManager;
+
+    public AuthHelper(SignInManager<User> signInManager, UserManager<User> userManager)
     {
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly UserManager<IdentityUser> _userManager;
+        _signInManager = signInManager;
+        _userManager = userManager;
+    }
 
-        public AuthHelper(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+    public async Task LogoutAndInvalidateSessionAsync(ClaimsPrincipal userPrincipal)
+    {
+        User? user = await _userManager.GetUserAsync(userPrincipal);
+
+        if (user is not null)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
+            // Invalida las cookies ya emitidas: cerrar sesión en un equipo
+            // cierra también las sesiones abiertas en los demás
+            await _userManager.UpdateSecurityStampAsync(user);
         }
 
-        public async Task LogoutAndInvalidateSessionAsync(ClaimsPrincipal userPrincipal)
-        {
-            var user = await _userManager.GetUserAsync(userPrincipal);
-
-            if (user != null)
-            {
-                // Invalida sesiones previas (exigencia de la rúbrica)
-                await _userManager.UpdateSecurityStampAsync(user);
-            }
-
-            // Cierra la sesión actual
-            await _signInManager.SignOutAsync();
-        }
+        await _signInManager.SignOutAsync();
     }
 }
