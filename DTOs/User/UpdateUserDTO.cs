@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using BodegaApp.DTOs.Role;
 
 namespace BodegaApp.DTOs.User;
 
-public class UserEditDTO
+public class UpdateUserDTO
 {
     public string Id { get; set; } = string.Empty;
 
@@ -22,5 +23,5 @@ public class UserEditDTO
     [MinLength(1, ErrorMessage = "Debe seleccionar al menos un rol.")]
     public List<string> SelectedRoleIds { get; set; } = new();
 
-    public List<UserRoleOption> Roles { get; set; } = new();
+    public List<RoleOptionDTO> Roles { get; set; } = new();
 }

@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using BodegaApp.DTOs.Role;
 
 namespace BodegaApp.DTOs.User;
 
-public class UserCreateDTO
+public class CreateUserDTO
 {
     [Required(ErrorMessage = "El nombre es obligatorio.")]
     [StringLength(100, ErrorMessage = "El nombre no puede superar los 100 caracteres.")]
@@ -20,5 +21,5 @@ public class UserCreateDTO
     [MinLength(1, ErrorMessage = "Debe seleccionar al menos un rol.")]
     public List<string> SelectedRoleIds { get; set; } = new();
 
-    public List<UserRoleOption> Roles { get; set; } = new();
+    public List<RoleOptionDTO> Roles { get; set; } = new();
 }

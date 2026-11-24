@@ -1,48 +1,45 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using BodegaApp.Core;
 using BodegaApp.Core.Attributes;
-using BodegaApp.Data;
+using BodegaApp.Core.Pagination;
 using BodegaApp.Domain;
-using BodegaApp.Domain.Entities;
-using BodegaApp.Models;
+using BodegaApp.DTOs.Role;
+using BodegaApp.Services.Abstractions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BodegaApp.Controllers;
 
 public class RolesController : Controller
 {
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly BodegaDbContext _context;
+    private readonly IRolesService _rolesService;
 
-    public RolesController(
-        RoleManager<IdentityRole> roleManager,
-        BodegaDbContext context)
+    public RolesController(IRolesService rolesService)
     {
-        _roleManager = roleManager;
-        _context = context;
+        _rolesService = rolesService;
     }
 
     [HttpGet]
     [CustomAuthorize(Permissions.RolesShow)]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery] RolePaginationRequest request)
     {
-        var roles = await _roleManager.Roles
-            .OrderBy(role => role.Name)
-            .ToListAsync();
+        Response<PaginationResponse<RoleDTO>> response = await _rolesService.GetPaginationAsync(request);
 
-        return View(roles);
+        if (!response.IsSuccess || response.Result is null)
+        {
+            TempData["Error"] = response.Message;
+
+            return View(new PaginationResponse<RoleDTO>());
+        }
+
+        return View(response.Result);
     }
 
     [HttpGet]
     [CustomAuthorize(Permissions.RolesCreate)]
     public async Task<IActionResult> Create()
     {
-        RoleFormViewModel model = new()
+        RoleDTO model = new()
         {
-            Permissions = await _context.Permissions
-                .OrderBy(permission => permission.Module)
-                .ThenBy(permission => permission.Description)
-                .ToListAsync()
+            Permissions = await GetPermissionsAsync()
         };
 
         return View(model);
@@ -51,65 +48,30 @@ public class RolesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.RolesCreate)]
-    public async Task<IActionResult> Create(RoleFormViewModel model)
+    public async Task<IActionResult> Create(RoleDTO model)
     {
-        model.RoleName = model.RoleName?.Trim() ?? string.Empty;
-
-        if (await _roleManager.RoleExistsAsync(model.RoleName))
-        {
-            ModelState.AddModelError(
-                nameof(model.RoleName),
-                "Ya existe un rol con ese nombre.");
-        }
-
-        List<int> selectedIds = model.SelectedPermissionIds
-            .Distinct()
-            .ToList();
-
-        List<Permission> permissions = await _context.Permissions
-            .Where(permission => selectedIds.Contains(permission.Id))
-            .ToListAsync();
-
-        if (permissions.Count != selectedIds.Count)
-        {
-            ModelState.AddModelError(
-                string.Empty,
-                "Uno o más permisos seleccionados no son válidos.");
-        }
-
         if (!ModelState.IsValid)
         {
-            await LoadPermissions(model);
+            await LoadPermissionsAsync(model);
             return View(model);
         }
 
-        IdentityRole role = new(model.RoleName);
+        Response<RoleDTO> response = await _rolesService.CreateAsync(model);
 
-        IdentityResult result = await _roleManager.CreateAsync(role);
-
-        if (!result.Succeeded)
+        if (!response.IsSuccess)
         {
-            foreach (var error in result.Errors)
+            ModelState.AddModelError(string.Empty, response.Message);
+
+            foreach (string error in response.Errors)
             {
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(string.Empty, error);
             }
 
-            await LoadPermissions(model);
+            await LoadPermissionsAsync(model);
             return View(model);
         }
 
-        foreach (Permission permission in permissions)
-        {
-            _context.RolePermissions.Add(new RolePermission
-            {
-                RoleId = role.Id,
-                PermissionId = permission.Id
-            });
-        }
-
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Rol creado correctamente.";
+        TempData["Success"] = response.Message;
 
         return RedirectToAction(nameof(Index));
     }
@@ -118,111 +80,113 @@ public class RolesController : Controller
     [CustomAuthorize(Permissions.RolesUpdate)]
     public async Task<IActionResult> Edit(string id)
     {
-        IdentityRole? role = await _roleManager.FindByIdAsync(id);
+        Response<RoleDTO> response = await _rolesService.GetOneAsync(id);
 
-        if (role is null)
+        if (!response.IsSuccess || response.Result is null)
         {
-            return NotFound();
+            TempData["Error"] = response.Message;
+
+            return RedirectToAction(nameof(Index));
         }
 
-        if (role.Name == Roles.Admin)
+        if (response.Result.Name == Roles.Admin)
         {
             TempData["Error"] = "El rol Admin no se edita: tiene acceso a todo por encima de la tabla de permisos.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        List<int> selectedIds = await _context.RolePermissions
-            .Where(rolePermission => rolePermission.RoleId == id)
-            .Select(rolePermission => rolePermission.PermissionId)
-            .ToListAsync();
-
-        RoleFormViewModel model = new()
-        {
-            RoleId = role.Id,
-            RoleName = role.Name ?? string.Empty,
-            SelectedPermissionIds = selectedIds,
-            Permissions = await _context.Permissions
-                .OrderBy(permission => permission.Module)
-                .ThenBy(permission => permission.Description)
-                .ToListAsync()
-        };
-
-        return View(model);
+        return View(response.Result);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.RolesUpdate)]
-    public async Task<IActionResult> Edit(string id, RoleFormViewModel model)
+    public async Task<IActionResult> Edit(string id, RoleDTO model)
     {
-        if (id != model.RoleId)
+        if (id != model.Id)
         {
             return NotFound();
-        }
-
-        IdentityRole? role = await _roleManager.FindByIdAsync(id);
-
-        if (role is null)
-        {
-            return NotFound();
-        }
-
-        if (role.Name == Roles.Admin)
-        {
-            TempData["Error"] = "El rol Admin no se edita: tiene acceso a todo por encima de la tabla de permisos.";
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        List<int> selectedIds = model.SelectedPermissionIds
-            .Distinct()
-            .ToList();
-
-        List<Permission> permissions = await _context.Permissions
-            .Where(permission => selectedIds.Contains(permission.Id))
-            .ToListAsync();
-
-        if (permissions.Count != selectedIds.Count)
-        {
-            ModelState.AddModelError(
-                string.Empty,
-                "Uno o más permisos seleccionados no son válidos.");
         }
 
         if (!ModelState.IsValid)
         {
-            await LoadPermissions(model);
+            await LoadPermissionsAsync(model);
             return View(model);
         }
 
-        List<RolePermission> currentPermissions = await _context.RolePermissions
-            .Where(rolePermission => rolePermission.RoleId == id)
-            .ToListAsync();
+        Response<RoleDTO> response = await _rolesService.UpdateAsync(model);
 
-        _context.RolePermissions.RemoveRange(currentPermissions);
-
-        foreach (Permission permission in permissions)
+        if (!response.IsSuccess)
         {
-            _context.RolePermissions.Add(new RolePermission
+            ModelState.AddModelError(string.Empty, response.Message);
+
+            foreach (string error in response.Errors)
             {
-                RoleId = id,
-                PermissionId = permission.Id
-            });
+                ModelState.AddModelError(string.Empty, error);
+            }
+
+            await LoadPermissionsAsync(model);
+            return View(model);
         }
 
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Permisos del rol actualizados correctamente.";
+        TempData["Success"] = response.Message;
 
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task LoadPermissions(RoleFormViewModel model)
+    [HttpGet]
+    [CustomAuthorize(Permissions.RolesDelete)]
+    public async Task<IActionResult> Delete(string id)
     {
-        model.Permissions = await _context.Permissions
-            .OrderBy(permission => permission.Module)
-            .ThenBy(permission => permission.Description)
-            .ToListAsync();
+        Response<RoleDTO> response = await _rolesService.GetOneAsync(id);
+
+        if (!response.IsSuccess || response.Result is null)
+        {
+            TempData["Error"] = response.Message;
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (response.Result.Name == Roles.Admin)
+        {
+            TempData["Error"] = "El rol Admin no se puede eliminar.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(response.Result);
+    }
+
+    [HttpPost]
+    [ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [CustomAuthorize(Permissions.RolesDelete)]
+    public async Task<IActionResult> DeleteConfirmed(string id)
+    {
+        Response response = await _rolesService.DeleteAsync(id);
+
+        if (response.IsSuccess)
+        {
+            TempData["Success"] = response.Message;
+        }
+        else
+        {
+            TempData["Error"] = response.Message;
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<List<PermissionDTO>> GetPermissionsAsync()
+    {
+        Response<List<PermissionDTO>> response = await _rolesService.GetPermissionsAsync();
+
+        return response.Result ?? [];
+    }
+
+    private async Task LoadPermissionsAsync(RoleDTO model)
+    {
+        model.Permissions = await GetPermissionsAsync();
     }
 }

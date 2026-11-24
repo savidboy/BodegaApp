@@ -35,10 +35,10 @@ public class AccountService : IAccountService
         _authHelper = authHelper;
     }
 
-    public async Task<Response<SignInResult>> LoginAsync(string email, string password, bool rememberMe)
+    public async Task<Response<SignInResult>> LoginAsync(LoginDTO dto)
     {
         SignInResult result = await _signInManager.PasswordSignInAsync(
-            email, password, rememberMe, lockoutOnFailure: true);
+            dto.Email, dto.Password, dto.RememberMe, lockoutOnFailure: true);
 
         return new Response<SignInResult>
         {
@@ -173,6 +173,38 @@ public class AccountService : IAccountService
         await _signInManager.RefreshSignInAsync(currentUser);
 
         return Response<bool>.Success(true, "Datos actualizados correctamente.");
+    }
+
+    public async Task<Response<bool>> ChangePasswordAsync(ChangePasswordDTO dto)
+    {
+        ClaimsPrincipal? principal = _httpContextAccessor.HttpContext?.User;
+
+        if (principal?.Identity is null || !principal.Identity.IsAuthenticated)
+        {
+            return Response<bool>.Failure("No hay una sesión activa.");
+        }
+
+        User? currentUser = await _userManager.GetUserAsync(principal);
+
+        if (currentUser is null)
+        {
+            return Response<bool>.Failure("No se encontró el usuario.");
+        }
+
+        IdentityResult result = await _userManager.ChangePasswordAsync(
+            currentUser, dto.CurrentPassword, dto.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            return Response<bool>.Failure(
+                "No se pudo cambiar la contraseña. Verifica la contraseña actual.",
+                result.Errors.Select(error => error.Description).ToArray());
+        }
+
+        // La contraseña cambió: se renueva la cookie para no cerrar la sesión actual
+        await _signInManager.RefreshSignInAsync(currentUser);
+
+        return Response<bool>.Success(true, "Contraseña actualizada correctamente.");
     }
 
     private async Task<HashSet<string>> GetGrantedCodesAsync(HttpContext httpContext, ClaimsPrincipal principal)

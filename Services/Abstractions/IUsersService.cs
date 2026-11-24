@@ -1,19 +1,21 @@
 using BodegaApp.Core;
+using BodegaApp.Core.Pagination;
+using BodegaApp.DTOs.Role;
 using BodegaApp.DTOs.User;
 
 namespace BodegaApp.Services.Abstractions;
 
 public interface IUsersService
 {
-    Task<Response<List<UserViewModel>>> GetAllUsersAsync();
+    Task<Response<PaginationResponse<UserDTO>>> GetPaginationAsync(UserPaginationRequest request);
 
-    Task<Response<UserViewModel>> GetOneAsync(string id);
+    Task<Response<UserDTO>> GetOneAsync(string id);
 
-    Task<Response<List<UserRoleOption>>> GetAllRolesAsync();
+    Task<Response<List<RoleOptionDTO>>> GetAllRolesAsync();
 
-    Task<Response<bool>> CreateUserAsync(UserCreateDTO dto);
+    Task<Response<UserDTO>> CreateAsync(CreateUserDTO dto);
 
-    Task<Response<bool>> UpdateUserAsync(UserEditDTO dto);
+    Task<Response<UserDTO>> UpdateAsync(UpdateUserDTO dto);
 
-    Task<Response<bool>> DeleteUserAsync(string id);
+    Task<Response> DeleteAsync(string id);
 }

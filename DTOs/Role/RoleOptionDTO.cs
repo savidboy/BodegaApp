@@ -1,6 +1,6 @@
-namespace BodegaApp.DTOs.User;
+namespace BodegaApp.DTOs.Role;
 
-public class UserRoleOption
+public class RoleOptionDTO
 {
     public string Id { get; set; } = string.Empty;
 

@@ -1,4 +1,4 @@
-@model IEnumerable<UserViewModel>
+@model PaginationResponse<UserDTO>
 
 @inject BodegaApp.Services.Abstractions.IAccountService Account
 
@@ -21,6 +21,24 @@
         }
     </div>
 
+    <form asp-action="Index" method="get" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="search"
+               name="filter"
+               value="@Model.Filter"
+               class="form-control flex-grow-1 filter-input"
+               aria-label="Buscar usuarios"
+               placeholder="Buscar por nombre o correo" />
+
+        <input type="hidden" name="recordsPerPage" value="@Model.RecordsPerPage" />
+
+        <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Filter))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a>
+        }
+    </form>
+
     <table class="table table-hover">
         <thead>
             <tr>
@@ -32,7 +50,7 @@
         </thead>
 
         <tbody>
-            @foreach (var user in Model)
+            @foreach (UserDTO user in Model.List)
             {
                 <tr>
                     <td>@user.FullName</td>
@@ -72,14 +90,18 @@
                 </tr>
             }
 
-            @if (!Model.Any())
+            @if (Model.List.Count == 0)
             {
                 <tr>
                     <td colspan="4" class="text-center text-muted py-4">
-                        No hay usuarios registrados.
+                        @(string.IsNullOrWhiteSpace(Model.Filter)
+                            ? "No hay usuarios registrados."
+                            : "No hay usuarios que coincidan con la búsqueda.")
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+
+    <partial name="_Pagination" model="Model" />
 </div>

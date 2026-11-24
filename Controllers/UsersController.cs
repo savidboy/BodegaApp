@@ -1,6 +1,8 @@
 using BodegaApp.Core;
 using BodegaApp.Core.Attributes;
+using BodegaApp.Core.Pagination;
 using BodegaApp.Domain;
+using BodegaApp.DTOs.Role;
 using BodegaApp.DTOs.User;
 using BodegaApp.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
@@ -18,15 +20,15 @@ public class UsersController : Controller
 
     [HttpGet]
     [CustomAuthorize(Permissions.UsersShow)]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery] UserPaginationRequest request)
     {
-        Response<List<UserViewModel>> response = await _usersService.GetAllUsersAsync();
+        Response<PaginationResponse<UserDTO>> response = await _usersService.GetPaginationAsync(request);
 
-        if (!response.IsSuccess)
+        if (!response.IsSuccess || response.Result is null)
         {
             TempData["Error"] = response.Message;
 
-            return RedirectToAction(nameof(Index));
+            return View(new PaginationResponse<UserDTO>());
         }
 
         return View(response.Result);
@@ -36,7 +38,7 @@ public class UsersController : Controller
     [CustomAuthorize(Permissions.UsersCreate)]
     public async Task<IActionResult> Create()
     {
-        UserCreateDTO model = new()
+        CreateUserDTO model = new()
         {
             Roles = await GetRolesAsync()
         };
@@ -47,7 +49,7 @@ public class UsersController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.UsersCreate)]
-    public async Task<IActionResult> Create(UserCreateDTO model)
+    public async Task<IActionResult> Create(CreateUserDTO model)
     {
         model.Roles = await GetRolesAsync();
 
@@ -56,7 +58,7 @@ public class UsersController : Controller
             return View(model);
         }
 
-        Response<bool> response = await _usersService.CreateUserAsync(model);
+        Response<UserDTO> response = await _usersService.CreateAsync(model);
 
         if (!response.IsSuccess)
         {
@@ -84,7 +86,7 @@ public class UsersController : Controller
             return NotFound();
         }
 
-        Response<UserViewModel> response = await _usersService.GetOneAsync(id);
+        Response<UserDTO> response = await _usersService.GetOneAsync(id);
 
         if (!response.IsSuccess || response.Result is null)
         {
@@ -93,17 +95,14 @@ public class UsersController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        UserEditDTO model = new()
+        UpdateUserDTO model = new()
         {
             Id = response.Result.Id,
             FullName = response.Result.FullName,
             Email = response.Result.Email,
+            SelectedRoleIds = response.Result.RoleIds,
             Roles = await GetRolesAsync()
         };
-
-        List<UserRoleOption> roles = model.Roles;
-
-        model.SelectedRoleIds = await GetSelectedRoleIdsAsync(response.Result.Id, roles);
 
         return View(model);
     }
@@ -111,7 +110,7 @@ public class UsersController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [CustomAuthorize(Permissions.UsersUpdate)]
-    public async Task<IActionResult> Edit(UserEditDTO model)
+    public async Task<IActionResult> Edit(UpdateUserDTO model)
     {
         model.Roles = await GetRolesAsync();
 
@@ -120,7 +119,7 @@ public class UsersController : Controller
             return View(model);
         }
 
-        Response<bool> response = await _usersService.UpdateUserAsync(model);
+        Response<UserDTO> response = await _usersService.UpdateAsync(model);
 
         if (!response.IsSuccess)
         {
@@ -148,7 +147,7 @@ public class UsersController : Controller
             return NotFound();
         }
 
-        Response<UserViewModel> response = await _usersService.GetOneAsync(id);
+        Response<UserDTO> response = await _usersService.GetOneAsync(id);
 
         if (!response.IsSuccess || response.Result is null)
         {
@@ -166,7 +165,7 @@ public class UsersController : Controller
     [CustomAuthorize(Permissions.UsersDelete)]
     public async Task<IActionResult> DeleteConfirmed(string id)
     {
-        Response<bool> response = await _usersService.DeleteUserAsync(id);
+        Response response = await _usersService.DeleteAsync(id);
 
         if (response.IsSuccess)
         {
@@ -180,26 +179,10 @@ public class UsersController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<List<UserRoleOption>> GetRolesAsync()
+    private async Task<List<RoleOptionDTO>> GetRolesAsync()
     {
-        Response<List<UserRoleOption>> response = await _usersService.GetAllRolesAsync();
+        Response<List<RoleOptionDTO>> response = await _usersService.GetAllRolesAsync();
 
         return response.Result ?? [];
-    }
-
-    // Los roles que ya tiene el usuario salen marcados en el formulario
-    private async Task<List<string>> GetSelectedRoleIdsAsync(string userId, List<UserRoleOption> roles)
-    {
-        Response<UserViewModel> response = await _usersService.GetOneAsync(userId);
-
-        if (!response.IsSuccess || response.Result is null)
-        {
-            return [];
-        }
-
-        return roles
-            .Where(role => response.Result.Roles.Contains(role.Name))
-            .Select(role => role.Id)
-            .ToList();
     }
 }

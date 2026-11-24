@@ -16,10 +16,10 @@ public static class Permissions
     public const string UsersUpdate = "users.update";
     public const string UsersDelete = "users.delete";
 
-    // Sin roles.delete: borrar un rol deja usuarios huérfanos, se le quitan permisos
     public const string RolesShow = "roles.show";
     public const string RolesCreate = "roles.create";
     public const string RolesUpdate = "roles.update";
+    public const string RolesDelete = "roles.delete";
 
     public const string ProductsShow = "products.show";
     public const string ProductsCreate = "products.create";
@@ -43,6 +43,7 @@ public static class Permissions
         new(RolesShow, "Ver roles y sus permisos", "Roles"),
         new(RolesCreate, "Crear roles con sus permisos", "Roles"),
         new(RolesUpdate, "Editar los permisos de un rol", "Roles"),
+        new(RolesDelete, "Eliminar roles sin usuarios asignados", "Roles"),
 
         new(ProductsShow, "Ver productos", "Productos"),
         new(ProductsCreate, "Crear productos", "Productos"),

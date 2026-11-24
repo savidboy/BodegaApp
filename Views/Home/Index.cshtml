@@ -1,5 +1,13 @@
+@model HomeDashboardDTO
+
+@inject BodegaApp.Services.Abstractions.IAccountService Account
+
 @{
     ViewData["Title"] = "Inicio";
+
+    var canSuppliers = await Account.AccountUserIsAuthorizedAsync(Permissions.SuppliersShow);
+    var canUsers = await Account.AccountUserIsAuthorizedAsync(Permissions.UsersShow);
+    var canRoles = await Account.AccountUserIsAuthorizedAsync(Permissions.RolesShow);
 }
 
 <div class="hero p-4 p-md-5 mb-4">
@@ -10,21 +18,54 @@
 </div>
 
 <div class="row g-3">
-    <div class="col-md-6">
-        <div class="module-card p-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card p-4 h-100">
             <h5>Proveedores</h5>
-            <p class="text-muted">
-                Alta, edición, búsqueda y baja de proveedores, con baja definitiva solo para el administrador.
+            <p class="text-muted mb-2">
+                <strong>@Model.ActiveSuppliers</strong> activos ·
+                <strong>@Model.InactiveSuppliers</strong> inactivos
             </p>
-            <a asp-controller="Suppliers" asp-action="Index" class="btn btn-primary btn-sm">Abrir</a>
+
+            @if (canSuppliers)
+            {
+                <a asp-controller="Suppliers" asp-action="Index" class="btn btn-primary btn-sm">Abrir</a>
+            }
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="module-card p-4">
-            <h5>Pendiente</h5>
-            <p class="text-muted">
-                Inventario, pedidos y gestión de usuarios quedan para las siguientes entregas.
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card p-4 h-100">
+            <h5>Usuarios</h5>
+            <p class="text-muted mb-2">
+                <strong>@Model.Users</strong> registrados
+            </p>
+
+            @if (canUsers)
+            {
+                <a asp-controller="Users" asp-action="Index" class="btn btn-primary btn-sm">Abrir</a>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card p-4 h-100">
+            <h5>Roles</h5>
+            <p class="text-muted mb-2">
+                <strong>@Model.Roles</strong> roles con permisos por código
+            </p>
+
+            @if (canRoles)
+            {
+                <a asp-controller="Roles" asp-action="Index" class="btn btn-primary btn-sm">Abrir</a>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="module-card p-4 h-100">
+            <h5>Permisos</h5>
+            <p class="text-muted mb-2">
+                <strong>@Model.Permissions</strong> permisos registrados
             </p>
         </div>
     </div>

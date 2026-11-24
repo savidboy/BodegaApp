@@ -7,7 +7,7 @@ namespace BodegaApp.Services.Abstractions;
 
 public interface IAccountService
 {
-    Task<Response<SignInResult>> LoginAsync(string email, string password, bool rememberMe);
+    Task<Response<SignInResult>> LoginAsync(LoginDTO dto);
     Task LogoutAsync();
 
     bool AccountUserIsAuthenticated();
@@ -17,4 +17,6 @@ public interface IAccountService
     Task<Response<User>> GetCurrentUserAsync();
 
     Task<Response<bool>> UpdateUserAsync(AccountUserDTO dto);
+
+    Task<Response<bool>> ChangePasswordAsync(ChangePasswordDTO dto);
 }

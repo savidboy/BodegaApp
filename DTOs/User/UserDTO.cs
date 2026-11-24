@@ -1,6 +1,6 @@
 namespace BodegaApp.DTOs.User;
 
-public class UserViewModel
+public class UserDTO
 {
     public string Id { get; set; } = string.Empty;
 
@@ -9,4 +9,6 @@ public class UserViewModel
     public string Email { get; set; } = string.Empty;
 
     public List<string> Roles { get; set; } = new();
+
+    public List<string> RoleIds { get; set; } = new();
 }

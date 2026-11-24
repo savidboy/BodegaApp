@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using BodegaApp.Core;
 using BodegaApp.Domain.Entities;
 using BodegaApp.DTOs.Account;
-using BodegaApp.Models;
 using BodegaApp.Services.Abstractions;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
@@ -31,7 +30,7 @@ public class AccountController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting("login")]
-    public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
+    public async Task<IActionResult> Login(LoginDTO model, string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
 
@@ -40,8 +39,7 @@ public class AccountController : Controller
             return View(model);
         }
 
-        Response<SignInResult> response = await _accountService.LoginAsync(
-            model.Email, model.Password, model.RememberMe);
+        Response<SignInResult> response = await _accountService.LoginAsync(model);
 
         if (response.IsSuccess)
         {
@@ -92,6 +90,42 @@ public class AccountController : Controller
         if (!response.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, response.Message);
+            return View(dto);
+        }
+
+        TempData["Success"] = response.Message;
+
+        return RedirectToAction(nameof(UpdateUser));
+    }
+
+    [Authorize]
+    [HttpGet]
+    public IActionResult ChangePassword()
+    {
+        return View(new ChangePasswordDTO());
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordDTO dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(dto);
+        }
+
+        Response<bool> response = await _accountService.ChangePasswordAsync(dto);
+
+        if (!response.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, response.Message);
+
+            foreach (string error in response.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+
             return View(dto);
         }
 

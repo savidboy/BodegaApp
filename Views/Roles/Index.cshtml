@@ -1,57 +1,109 @@
-@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityRole>
+@model PaginationResponse<RoleDTO>
+
+@inject BodegaApp.Services.Abstractions.IAccountService Account
 
 @{
     ViewData["Title"] = "Roles";
+
+    // Los botones se ocultan por comodidad; el controlador valida el permiso igual
+    var canCreate = await Account.AccountUserIsAuthorizedAsync(Permissions.RolesCreate);
+    var canUpdate = await Account.AccountUserIsAuthorizedAsync(Permissions.RolesUpdate);
+    var canDelete = await Account.AccountUserIsAuthorizedAsync(Permissions.RolesDelete);
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="page-title">Roles</h1>
 
-        <a asp-action="Create" class="btn btn-primary">
-            Nuevo rol
-        </a>
+        @if (canCreate)
+        {
+            <a asp-action="Create" class="btn btn-primary">Nuevo rol</a>
+        }
     </div>
+
+    <form asp-action="Index" method="get" class="d-flex flex-wrap gap-2 mb-3">
+        <input type="search"
+               name="filter"
+               value="@Model.Filter"
+               class="form-control flex-grow-1 filter-input"
+               aria-label="Buscar roles"
+               placeholder="Buscar rol por nombre" />
+
+        <input type="hidden" name="recordsPerPage" value="@Model.RecordsPerPage" />
+
+        <button type="submit" class="btn btn-outline-secondary">Buscar</button>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Filter))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a>
+        }
+    </form>
 
     <table class="table table-hover">
         <thead>
             <tr>
                 <th>Nombre del rol</th>
+                <th>Permisos</th>
                 <th class="text-end">Acciones</th>
             </tr>
         </thead>
 
         <tbody>
-            @foreach (var role in Model)
+            @foreach (RoleDTO role in Model.List)
             {
                 <tr>
                     <td>@role.Name</td>
-
-                    <td class="text-end">
+                    <td>
                         @if (role.Name == Roles.Admin)
                         {
                             <span class="text-muted">Acceso total</span>
                         }
                         else
                         {
-                            <a asp-action="Edit"
-                               asp-route-id="@role.Id"
-                               class="btn btn-sm btn-warning">
-                                Editar permisos
-                            </a>
+                            <span class="badge bg-secondary">@role.PermissionCount</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @if (role.Name == Roles.Admin)
+                        {
+                            <span class="text-muted">Protegido</span>
+                        }
+                        else
+                        {
+                            @if (canUpdate)
+                            {
+                                <a asp-action="Edit"
+                                   asp-route-id="@role.Id"
+                                   class="btn btn-sm btn-warning">
+                                    Editar permisos
+                                </a>
+                            }
+
+                            @if (canDelete)
+                            {
+                                <a asp-action="Delete"
+                                   asp-route-id="@role.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Eliminar
+                                </a>
+                            }
                         }
                     </td>
                 </tr>
             }
 
-            @if (!Model.Any())
+            @if (Model.List.Count == 0)
             {
                 <tr>
-                    <td colspan="2" class="text-center text-muted py-4">
-                        No hay roles registrados.
+                    <td colspan="3" class="text-center text-muted py-4">
+                        @(string.IsNullOrWhiteSpace(Model.Filter)
+                            ? "No hay roles registrados."
+                            : "No hay roles que coincidan con la búsqueda.")
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+
+    <partial name="_Pagination" model="Model" />
 </div>

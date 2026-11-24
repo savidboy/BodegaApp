@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BodegaApp.Models;
+namespace BodegaApp.DTOs.Account;
 
-public class LoginViewModel
+public class LoginDTO
 {
     [Required(ErrorMessage = "El correo electrónico es requerido.")]
     [EmailAddress(ErrorMessage = "El formato del correo no es válido.")]

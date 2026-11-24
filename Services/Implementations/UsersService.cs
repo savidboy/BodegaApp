@@ -1,7 +1,9 @@
 using BodegaApp.Core;
+using BodegaApp.Core.Pagination;
 using BodegaApp.Data;
 using BodegaApp.Domain;
 using BodegaApp.Domain.Entities;
+using BodegaApp.DTOs.Role;
 using BodegaApp.DTOs.User;
 using BodegaApp.Services.Abstractions;
 using Microsoft.AspNetCore.Identity;
@@ -13,98 +15,142 @@ namespace BodegaApp.Services.Implementations;
 public class UsersService : IUsersService
 {
     private readonly UserManager<User> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly BodegaDbContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<UsersService> _logger;
 
     public UsersService(
         UserManager<User> userManager,
-        RoleManager<IdentityRole> roleManager,
         BodegaDbContext context,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<UsersService> logger)
     {
         _userManager = userManager;
-        _roleManager = roleManager;
         _context = context;
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
-    public async Task<Response<List<UserViewModel>>> GetAllUsersAsync()
+    public async Task<Response<PaginationResponse<UserDTO>>> GetPaginationAsync(UserPaginationRequest request)
     {
-        List<User> users = await _userManager.Users.ToListAsync();
+        try
+        {
+            IQueryable<User> query = _userManager.Users.AsNoTracking();
 
-        // Los roles se traen en una sola consulta: si se pide rol por usuario
-        // sale una consulta por cada usuario de la lista
-        List<IdentityRole> roles = await _roleManager.Roles.ToListAsync();
-
-        Dictionary<string, string> roleNames = roles.ToDictionary(role => role.Id, role => role.Name ?? string.Empty);
-
-        List<IdentityUserRole<string>> userRoles = await _context.UserRoles.ToListAsync();
-
-        Dictionary<string, List<string>> rolesByUser = userRoles
-            .GroupBy(userRole => userRole.UserId)
-            .ToDictionary(
-                group => group.Key,
-                group => group
-                    .Select(userRole => roleNames.TryGetValue(userRole.RoleId, out string? name) ? name : userRole.RoleId)
-                    .OrderBy(name => name)
-                    .ToList());
-
-        List<UserViewModel> result = users
-            .Select(user => new UserViewModel
+            if (!string.IsNullOrWhiteSpace(request.Filter))
             {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                Roles = rolesByUser.TryGetValue(user.Id, out List<string>? names) ? names : []
-            })
-            .OrderBy(user => user.FullName)
-            .ToList();
+                string filter = request.Filter.Trim().ToLower();
 
-        return Response<List<UserViewModel>>.Success(result);
+                query = query.Where(user => user.FullName.ToLower().Contains(filter)
+                    || (user.Email != null && user.Email.ToLower().Contains(filter)));
+            }
+
+            int totalCount = await query.CountAsync();
+
+            List<User> users = await query
+                .OrderBy(user => user.FullName)
+                .Skip((request.Page - 1) * request.RecordsPerPage)
+                .Take(request.RecordsPerPage)
+                .ToListAsync();
+
+            List<string> userIds = users.Select(user => user.Id).ToList();
+
+            // Los roles de toda la página se traen en dos consultas, no una por usuario
+            List<IdentityUserRole<string>> userRoles = await _context.UserRoles
+                .Where(userRole => userIds.Contains(userRole.UserId))
+                .AsNoTracking()
+                .ToListAsync();
+
+            List<IdentityRole> roles = await _context.Roles.AsNoTracking().ToListAsync();
+
+            Dictionary<string, IdentityRole> rolesById = roles.ToDictionary(role => role.Id);
+
+            Dictionary<string, List<string>> roleNamesByUser = userRoles
+                .Where(userRole => rolesById.ContainsKey(userRole.RoleId))
+                .GroupBy(userRole => userRole.UserId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .Select(userRole => rolesById[userRole.RoleId].Name ?? string.Empty)
+                        .OrderBy(name => name)
+                        .ToList());
+
+            Dictionary<string, List<string>> roleIdsByUser = userRoles
+                .GroupBy(userRole => userRole.UserId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(userRole => userRole.RoleId).ToList());
+
+            List<UserDTO> items = users
+                .Select(user => new UserDTO
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email ?? string.Empty,
+                    Roles = roleNamesByUser.GetValueOrDefault(user.Id) ?? new List<string>(),
+                    RoleIds = roleIdsByUser.GetValueOrDefault(user.Id) ?? new List<string>()
+                })
+                .ToList();
+
+            PaginationResponse<UserDTO> pagination = new()
+            {
+                CurrentPage = request.Page,
+                RecordsPerPage = request.RecordsPerPage,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)request.RecordsPerPage),
+                Filter = request.Filter,
+                List = new PagedList<UserDTO>(items, totalCount, request.Page, request.RecordsPerPage),
+                RouteValues = new Dictionary<string, string>
+                {
+                    ["filter"] = request.Filter?.Trim() ?? string.Empty,
+                    ["recordsPerPage"] = request.RecordsPerPage.ToString()
+                }
+            };
+
+            return Response<PaginationResponse<UserDTO>>.Success(pagination);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "No se pudo obtener la lista de usuarios.");
+
+            return Response<PaginationResponse<UserDTO>>.Failure("No se pudo obtener la lista de usuarios.");
+        }
     }
 
-    public async Task<Response<UserViewModel>> GetOneAsync(string id)
+    public async Task<Response<UserDTO>> GetOneAsync(string id)
     {
         User? user = await _userManager.FindByIdAsync(id);
 
         if (user is null)
         {
-            return Response<UserViewModel>.Failure("No existe el usuario.");
+            return Response<UserDTO>.Failure("No existe el usuario.");
         }
 
-        List<string> roles = (await _userManager.GetRolesAsync(user)).ToList();
-
-        return Response<UserViewModel>.Success(new UserViewModel
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email ?? string.Empty,
-            Roles = roles.OrderBy(role => role).ToList()
-        });
+        return Response<UserDTO>.Success(await BuildDtoAsync(user));
     }
 
-    public async Task<Response<List<UserRoleOption>>> GetAllRolesAsync()
+    public async Task<Response<List<RoleOptionDTO>>> GetAllRolesAsync()
     {
-        List<UserRoleOption> roles = await _roleManager.Roles
+        List<RoleOptionDTO> roles = await _context.Roles
+            .AsNoTracking()
             .OrderBy(role => role.Name)
-            .Select(role => new UserRoleOption
+            .Select(role => new RoleOptionDTO
             {
                 Id = role.Id,
                 Name = role.Name ?? string.Empty
             })
             .ToListAsync();
 
-        return Response<List<UserRoleOption>>.Success(roles);
+        return Response<List<RoleOptionDTO>>.Success(roles);
     }
 
-    public async Task<Response<bool>> CreateUserAsync(UserCreateDTO dto)
+    public async Task<Response<UserDTO>> CreateAsync(CreateUserDTO dto)
     {
         string email = dto.Email.Trim();
 
         if (await _userManager.FindByEmailAsync(email) is not null)
         {
-            return Response<bool>.Failure("Ese correo ya está en uso.");
+            return Response<UserDTO>.Failure("Ese correo ya está en uso.");
         }
 
         User user = new()
@@ -119,23 +165,23 @@ public class UsersService : IUsersService
 
         if (!result.Succeeded)
         {
-            return Response<bool>.Failure(
+            return Response<UserDTO>.Failure(
                 "No se pudo crear el usuario.",
                 result.Errors.Select(error => error.Description).ToArray());
         }
 
         await AssignRolesAsync(user, dto.SelectedRoleIds, replace: false);
 
-        return Response<bool>.Success(true, "Usuario creado correctamente.");
+        return Response<UserDTO>.Success(await BuildDtoAsync(user), "Usuario creado correctamente.");
     }
 
-    public async Task<Response<bool>> UpdateUserAsync(UserEditDTO dto)
+    public async Task<Response<UserDTO>> UpdateAsync(UpdateUserDTO dto)
     {
         User? user = await _userManager.FindByIdAsync(dto.Id);
 
         if (user is null)
         {
-            return Response<bool>.Failure("No existe el usuario.");
+            return Response<UserDTO>.Failure("No existe el usuario.");
         }
 
         string email = dto.Email.Trim();
@@ -146,7 +192,7 @@ public class UsersService : IUsersService
 
             if (owner is not null && owner.Id != user.Id)
             {
-                return Response<bool>.Failure("Ese correo ya lo usa otro usuario.");
+                return Response<UserDTO>.Failure("Ese correo ya lo usa otro usuario.");
             }
 
             user.Email = email;
@@ -162,7 +208,7 @@ public class UsersService : IUsersService
 
         if (!result.Succeeded)
         {
-            return Response<bool>.Failure(
+            return Response<UserDTO>.Failure(
                 "No se pudo actualizar el usuario.",
                 result.Errors.Select(error => error.Description).ToArray());
         }
@@ -175,7 +221,7 @@ public class UsersService : IUsersService
 
             if (!passwordResult.Succeeded)
             {
-                return Response<bool>.Failure(
+                return Response<UserDTO>.Failure(
                     "No se pudo cambiar la contraseña.",
                     passwordResult.Errors.Select(error => error.Description).ToArray());
             }
@@ -183,23 +229,23 @@ public class UsersService : IUsersService
 
         await AssignRolesAsync(user, dto.SelectedRoleIds, replace: true);
 
-        return Response<bool>.Success(true, "Usuario actualizado correctamente.");
+        return Response<UserDTO>.Success(await BuildDtoAsync(user), "Usuario actualizado correctamente.");
     }
 
-    public async Task<Response<bool>> DeleteUserAsync(string id)
+    public async Task<Response> DeleteAsync(string id)
     {
         User? user = await _userManager.FindByIdAsync(id);
 
         if (user is null)
         {
-            return Response<bool>.Failure("No existe el usuario.");
+            return Response.Failure("No existe el usuario.");
         }
 
         ClaimsPrincipal? principal = _httpContextAccessor.HttpContext?.User;
 
         if (principal is not null && _userManager.GetUserId(principal) == user.Id)
         {
-            return Response<bool>.Failure("No puedes eliminar el usuario con el que iniciaste sesión.");
+            return Response.Failure("No puedes eliminar el usuario con el que iniciaste sesión.");
         }
 
         if (await _userManager.IsInRoleAsync(user, Roles.Admin))
@@ -208,17 +254,36 @@ public class UsersService : IUsersService
 
             if (admins.Count <= 1)
             {
-                return Response<bool>.Failure("No se puede eliminar el último administrador.");
+                return Response.Failure("No se puede eliminar el último administrador.");
             }
         }
 
         IdentityResult result = await _userManager.DeleteAsync(user);
 
         return result.Succeeded
-            ? Response<bool>.Success(true, "Usuario eliminado correctamente.")
-            : Response<bool>.Failure(
+            ? Response.Success("Usuario eliminado correctamente.")
+            : Response.Failure(
                 "No se pudo eliminar el usuario.",
                 result.Errors.Select(error => error.Description).ToArray());
+    }
+
+    private async Task<UserDTO> BuildDtoAsync(User user)
+    {
+        List<IdentityRole> roles = await (from userRole in _context.UserRoles
+                                          join role in _context.Roles on userRole.RoleId equals role.Id
+                                          where userRole.UserId == user.Id
+                                          select role)
+                                         .AsNoTracking()
+                                         .ToListAsync();
+
+        return new UserDTO
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            Roles = roles.Select(role => role.Name ?? string.Empty).OrderBy(name => name).ToList(),
+            RoleIds = roles.Select(role => role.Id).ToList()
+        };
     }
 
     // Los roles del usuario se reemplazan por completo: la lista viene del formulario
@@ -229,17 +294,10 @@ public class UsersService : IUsersService
             .Distinct()
             .ToList();
 
-        List<string> roleNames = new();
-
-        foreach (string roleId in ids)
-        {
-            IdentityRole? role = await _roleManager.FindByIdAsync(roleId);
-
-            if (role is not null)
-            {
-                roleNames.Add(role.Name ?? string.Empty);
-            }
-        }
+        List<string> roleNames = await _context.Roles
+            .Where(role => ids.Contains(role.Id))
+            .Select(role => role.Name!)
+            .ToListAsync();
 
         if (replace)
         {

@@ -29,11 +29,4 @@
             <a class="nav-link" asp-area="" asp-controller="Roles" asp-action="Index">Roles</a>
         </li>
     }
-
-    @if (await Account.AccountUserIsAuthorizedAsync(Permissions.HomeShow))
-    {
-        <li class="nav-item">
-            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">Privacidad</a>
-        </li>
-    }
 </ul>
