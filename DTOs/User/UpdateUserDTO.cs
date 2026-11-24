@@ -16,10 +16,6 @@ public class UpdateUserDTO
     [StringLength(256, ErrorMessage = "El correo no puede superar los 256 caracteres.")]
     public string Email { get; set; } = string.Empty;
 
-    // Vacía significa que la contraseña no cambia
-    [StringLength(100, ErrorMessage = "La contraseña no puede superar los 100 caracteres.")]
-    public string? Password { get; set; }
-
     [MinLength(1, ErrorMessage = "Debe seleccionar al menos un rol.")]
     public List<string> SelectedRoleIds { get; set; } = new();
 

@@ -213,20 +213,6 @@ public class UsersService : IUsersService
                 result.Errors.Select(error => error.Description).ToArray());
         }
 
-        if (!string.IsNullOrEmpty(dto.Password))
-        {
-            string token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            IdentityResult passwordResult = await _userManager.ResetPasswordAsync(user, token, dto.Password);
-
-            if (!passwordResult.Succeeded)
-            {
-                return Response<UserDTO>.Failure(
-                    "No se pudo cambiar la contraseña.",
-                    passwordResult.Errors.Select(error => error.Description).ToArray());
-            }
-        }
-
         await AssignRolesAsync(user, dto.SelectedRoleIds, replace: true);
 
         return Response<UserDTO>.Success(await BuildDtoAsync(user), "Usuario actualizado correctamente.");
